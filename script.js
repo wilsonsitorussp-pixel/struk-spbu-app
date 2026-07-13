@@ -1,13 +1,13 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKIukJmIqGE4ZJfF7vyZGh41nXYHFzDtpZiFtzSZgN4NVTlnV06Lwh1FVAKUSP3NGY/exec'; 
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzF4-bde1EnkAVzsCLmMFnempjcqXO08zy1XPFmS2U_g2XdpqbK4ylfsDTcVkraXwB7/exec'; 
 
-let generatedIDs = [];
+let fullHistoryData = [];
 let operatorList = [];
 let bbmPrices = { "PERTALITE": 10000, "PERTAMAX": 12600, "PERTAMAX TURBO": 14400 };
 let currentShift = 2;
 let currentPompa = 12;
 let base64Logo = "";
+let editModeTransId = null;
 
-// --- INIT APP ---
 window.onload = () => {
     generatePompaButtons();
     setDefaultTime();
@@ -16,12 +16,10 @@ window.onload = () => {
 
 function setDefaultTime() {
     const now = new Date();
-    // Format YYYY-MM-DDThh:mm (untuk input datetime-local)
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('inWaktu').value = now.toISOString().slice(0,16);
 }
 
-// Format waktu untuk struk: DD/MM/YYYY HH:MM:SS
 function formatWaktuStruk(waktuInput) {
     if(!waktuInput) return "";
     const d = new Date(waktuInput);
@@ -33,7 +31,6 @@ function formatWaktuStruk(waktuInput) {
     return `${dd}/${mm}/${yyyy} ${hh}:${min}:00`;
 }
 
-// --- UI LOGIC ---
 function switchTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
@@ -53,43 +50,47 @@ function generatePompaButtons() {
     }
 }
 
-function setShift(val) {
-    currentShift = val;
-    const btns = document.getElementById('shiftGroup').children;
-    for(let btn of btns) btn.classList.remove('active');
-    btns[val-1].classList.add('active');
-    updatePreview();
-}
+function setShift(val) { currentShift = val; const btns = document.getElementById('shiftGroup').children; for(let btn of btns) btn.classList.remove('active'); btns[val-1].classList.add('active'); updatePreview(); }
+function setPompa(val) { currentPompa = val; generatePompaButtons(); updatePreview(); }
+function formatNumber(num) { return new Intl.NumberFormat('id-ID').format(num || 0); }
 
-function setPompa(val) {
-    currentPompa = val;
-    generatePompaButtons(); // re-render to update active state
-    updatePreview();
-}
-
-function formatNumber(num) {
-    if(!num) return '0';
-    return new Intl.NumberFormat('id-ID').format(num);
-}
-
-// --- FETCH & DATA MANAGEMENT ---
+// --- FETCH DATA ---
 function fetchInitialData() {
     fetch(APPS_SCRIPT_URL)
         .then(res => res.json())
         .then(data => {
-            generatedIDs = data.ids;
+            fullHistoryData = data.history || [];
+            renderHistoryTable();
+
             const s = data.settings;
-            
+            // Load Teks
             document.getElementById('setSpbuName').value = s.spbuName || 'SPBU POLONIA';
             document.getElementById('setSpbuCode').value = s.spbuCode || '11.201.106';
-            document.getElementById('setSpbuAddress').value = s.spbuAddress || 'JL. Imam Bonjol, Medan Polonia\nTlp. 0614156892';
-            document.getElementById('setFooterText').value = s.footerText || 'ANDA MENDAPAT SUBSIDI DARI PEMERINTAH.\nGUNAKAN SECARA BIJAK.';
+            document.getElementById('setSpbuAddress').value = s.spbuAddress || 'JL. Imam Bonjol\nTlp. 0614156892';
+            document.getElementById('setFooterText').value = s.footerText || 'ANDA MENDAPAT SUBSIDI DARI PEMERINTAH.';
+            
+            // Load Basic Styling
             document.getElementById('setFont').value = s.fontSize || '12';
             document.getElementById('setLogo').value = s.logoSize || '100';
+            document.getElementById('setPadTop').value = s.space_padTop || '10';
+            document.getElementById('setPadBottom').value = s.space_padBottom || '15';
+            document.getElementById('setLogoGap').value = s.space_logoGap || '5';
+
+            // Load Advanced Styling
+            document.getElementById('stNameSize').value = s.style_nameSize || '14';
+            document.getElementById('stNameBold').checked = (s.style_nameBold === 'true');
+            document.getElementById('stCodeSize').value = s.style_codeSize || '12';
+            document.getElementById('stCodeBold').checked = (s.style_codeBold === 'true');
+            document.getElementById('stAddrSize').value = s.style_addrSize || '12';
+            document.getElementById('stAddrBold').checked = (s.style_addrBold === 'true');
+            document.getElementById('stFooterSize').value = s.style_footerSize || '10';
+            document.getElementById('stFooterBold').checked = (s.style_footerBold === 'true');
             
             if(s.logo) {
                 base64Logo = s.logo;
-                document.getElementById('logoPreview').src = base64Logo;
+                const img = document.getElementById('logoPreview');
+                img.src = base64Logo;
+                img.style.display = 'inline-block';
             }
 
             if (s.operators) operatorList = JSON.parse(s.operators);
@@ -106,29 +107,115 @@ function fetchInitialData() {
             updatePreview();
             document.getElementById('loadingOverlay').style.display = 'none';
         })
-        .catch(err => {
-            alert("Gagal terhubung ke Server Apps Script.");
-            document.getElementById('loadingOverlay').style.display = 'none';
-        });
+        .catch(err => { alert("Gagal terhubung ke Database Apps Script."); document.getElementById('loadingOverlay').style.display = 'none'; });
 }
 
-// --- OPERATOR MANAGEMENT ---
+// --- HISTORI MANAGEMENT ---
+function renderHistoryTable() {
+    const tbody = document.getElementById('historyTbody');
+    tbody.innerHTML = '';
+    // Reverse agar yang terbaru di atas
+    const displayData = [...fullHistoryData].reverse();
+    
+    displayData.forEach(row => {
+        // row: [Waktu, NoTrans, Shift, Pompa, Produk, Harga, Vol, Total, Operator, Plat, Odo, Status]
+        const tr = document.createElement('tr');
+        const statClass = row[11] === 'Direvisi' ? 'badge-revisi' : 'badge-asli';
+        const statText = row[11] || 'Asli';
+        
+        tr.innerHTML = `
+            <td>${row[0]}</td>
+            <td><strong>${row[1]}</strong></td>
+            <td>${row[4]}</td>
+            <td>Rp ${formatNumber(row[7])}</td>
+            <td><span class="badge ${statClass}">${statText}</span></td>
+            <td>
+                <button class="action-links" onclick="editTransaction('${row[1]}')">Edit</button> | 
+                <button class="action-links del" onclick="deleteTransaction('${row[1]}')">Hapus</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function editTransaction(noTrans) {
+    const row = fullHistoryData.find(r => String(r[1]) === String(noTrans));
+    if(!row) return;
+
+    editModeTransId = noTrans;
+    
+    // Parse time to input format (very basic parsing based on formatWaktuStruk output)
+    // Row 0 format: "DD/MM/YYYY HH:MM:SS". Need: "YYYY-MM-DDTHH:MM"
+    try {
+        const p = row[0].split(/[\s/:]/);
+        const isoStr = `${p[2]}-${p[1]}-${p[0]}T${p[3]}:${p[4]}`;
+        document.getElementById('inWaktu').value = isoStr;
+    } catch(e){}
+
+    document.getElementById('outTrans').innerText = row[1];
+    setShift(row[2]);
+    setPompa(row[3]);
+    document.getElementById('inProduk').value = row[4];
+    document.getElementById('inTotal').value = row[7];
+    document.getElementById('inOperator').value = row[8];
+    document.getElementById('inPlat').value = row[9];
+    document.getElementById('inOdo').value = row[10];
+    
+    calculateVolume();
+    
+    // UI Changes for Edit Mode
+    document.getElementById('editAlert').classList.remove('d-none');
+    document.getElementById('btnBatalEdit').classList.remove('d-none');
+    document.getElementById('btnAcak').disabled = true;
+    document.getElementById('btnProses').innerText = "💾 Cetak Revisi & Update Sheet";
+    document.getElementById('btnProses').classList.replace('btn-success', 'btn-warning');
+
+    switchTab('tab-input', document.querySelectorAll('.nav-btn')[0]);
+}
+
+function cancelEdit() {
+    editModeTransId = null;
+    document.getElementById('editAlert').classList.add('d-none');
+    document.getElementById('btnBatalEdit').classList.add('d-none');
+    document.getElementById('btnAcak').disabled = false;
+    document.getElementById('btnProses').innerText = "🖨️ Cetak & Simpan";
+    document.getElementById('btnProses').classList.replace('btn-warning', 'btn-success');
+    document.getElementById('inTotal').value = '';
+    setDefaultTime();
+    generateRandomID();
+}
+
+function deleteTransaction(noTrans) {
+    if(!confirm("Yakin ingin menghapus transaksi: " + noTrans + " ?")) return;
+    
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "deleteHistory", payload: { noTrans: noTrans } })
+    })
+    .then(res => res.json()).then(res => {
+        if(res.status === 'success') {
+            fullHistoryData = fullHistoryData.filter(r => String(r[1]) !== String(noTrans));
+            renderHistoryTable();
+            alert("Terhapus");
+        } else { alert("Gagal menghapus."); }
+        document.getElementById('loadingOverlay').style.display = 'none';
+    });
+}
+
+// --- LOGIC LAINNYA ---
 function renderOperatorUI() {
-    // Render dropdown list
     const select = document.getElementById('inOperator');
     select.innerHTML = '';
     operatorList.forEach(op => {
         const opt = document.createElement('option');
-        opt.value = op; opt.innerText = op;
-        select.appendChild(opt);
+        opt.value = op; opt.innerText = op; select.appendChild(opt);
     });
-
-    // Render list di tab setting
     const ul = document.getElementById('operatorList');
     ul.innerHTML = '';
     operatorList.forEach((op, index) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span>${op}</span> <button class="btn-sm" onclick="removeOperator(${index})">Hapus</button>`;
+        li.innerHTML = `<span>${op}</span> <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="removeOperator(${index})">Hapus</button>`;
         ul.appendChild(li);
     });
     updatePreview();
@@ -136,18 +223,10 @@ function renderOperatorUI() {
 
 function addOperator() {
     const val = document.getElementById('newOperator').value.toUpperCase().trim();
-    if(val && !operatorList.includes(val)) {
-        operatorList.push(val);
-        document.getElementById('newOperator').value = '';
-        renderOperatorUI();
-    }
+    if(val && !operatorList.includes(val)) { operatorList.push(val); document.getElementById('newOperator').value = ''; renderOperatorUI(); }
 }
-function removeOperator(index) {
-    operatorList.splice(index, 1);
-    renderOperatorUI();
-}
+function removeOperator(index) { operatorList.splice(index, 1); renderOperatorUI(); }
 
-// --- PRICES & CALCULATIONS ---
 function updatePrices() {
     bbmPrices["PERTALITE"] = parseFloat(document.getElementById('pricePertalite').value) || 0;
     bbmPrices["PERTAMAX"] = parseFloat(document.getElementById('pricePertamax').value) || 0;
@@ -159,41 +238,61 @@ function calculateVolume() {
     const produk = document.getElementById('inProduk').value;
     const total = parseFloat(document.getElementById('inTotal').value) || 0;
     const hargaStr = bbmPrices[produk];
-    
-    const vol = (hargaStr > 0) ? (total / hargaStr).toFixed(2) : "0.00";
-    document.getElementById('inVolume').value = vol;
+    document.getElementById('inVolume').value = (hargaStr > 0) ? (total / hargaStr).toFixed(2) : "0.00";
     updatePreview();
 }
 
-// --- LOGO UPLOAD (Base64) ---
 function handleLogoUpload(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
             base64Logo = e.target.result;
-            document.getElementById('logoPreview').src = base64Logo;
+            const img = document.getElementById('logoPreview');
+            img.src = base64Logo;
+            img.style.display = 'inline-block';
         }
         reader.readAsDataURL(file);
     }
 }
 
-// --- CORE FUNCTIONS ---
 function generateRandomID() {
     let newID;
+    const existingIds = fullHistoryData.map(r => String(r[1]));
     do { newID = Math.floor(100000 + Math.random() * 900000).toString(); } 
-    while (generatedIDs.includes(newID));
+    while (existingIds.includes(newID));
     document.getElementById('outTrans').innerText = newID;
 }
 
 function updatePreview() {
-    const fontSize = document.getElementById('setFont').value;
-    const logoSize = document.getElementById('setLogo').value;
-    document.getElementById('fontVal').innerText = fontSize;
-    document.getElementById('logoVal').innerText = logoSize;
-    document.documentElement.style.setProperty('--font-size', fontSize + 'px');
-    document.documentElement.style.setProperty('--logo-size', logoSize + 'px');
+    const root = document.documentElement;
+    // Set Basic Font & Spacing variables
+    document.getElementById('fontVal').innerText = document.getElementById('setFont').value;
+    document.getElementById('logoVal').innerText = document.getElementById('setLogo').value;
+    document.getElementById('padTopVal').innerText = document.getElementById('setPadTop').value;
+    document.getElementById('padBottomVal').innerText = document.getElementById('setPadBottom').value;
+    document.getElementById('logoGapVal').innerText = document.getElementById('setLogoGap').value;
+    
+    root.style.setProperty('--font-size', document.getElementById('setFont').value + 'px');
+    root.style.setProperty('--logo-size', document.getElementById('setLogo').value + 'px');
+    root.style.setProperty('--pad-top', document.getElementById('setPadTop').value + 'px');
+    root.style.setProperty('--pad-bottom', document.getElementById('setPadBottom').value + 'px');
+    root.style.setProperty('--logo-gap', document.getElementById('setLogoGap').value + 'px');
 
+    // Set Advanced Styling Variables
+    root.style.setProperty('--spbu-name-size', Math.max(5, document.getElementById('stNameSize').value) + 'px');
+    root.style.setProperty('--spbu-name-weight', document.getElementById('stNameBold').checked ? 'bold' : 'normal');
+    
+    root.style.setProperty('--spbu-code-size', Math.max(5, document.getElementById('stCodeSize').value) + 'px');
+    root.style.setProperty('--spbu-code-weight', document.getElementById('stCodeBold').checked ? 'bold' : 'normal');
+    
+    root.style.setProperty('--spbu-addr-size', Math.max(5, document.getElementById('stAddrSize').value) + 'px');
+    root.style.setProperty('--spbu-addr-weight', document.getElementById('stAddrBold').checked ? 'bold' : 'normal');
+    
+    root.style.setProperty('--footer-size', Math.max(5, document.getElementById('stFooterSize').value) + 'px');
+    root.style.setProperty('--footer-weight', document.getElementById('stFooterBold').checked ? 'bold' : 'normal');
+
+    // Set Texts
     document.getElementById('outSpbuName').innerText = document.getElementById('setSpbuName').value;
     document.getElementById('outSpbuCode').innerText = document.getElementById('setSpbuCode').value;
     document.getElementById('outSpbuAddress').innerText = document.getElementById('setSpbuAddress').value;
@@ -210,148 +309,105 @@ function updatePreview() {
     const total = document.getElementById('inTotal').value;
     document.getElementById('outTotal').innerText = formatNumber(total);
     document.getElementById('outCash').innerText = formatNumber(total);
-    
     document.getElementById('outVolume').innerText = document.getElementById('inVolume').value;
     
     const selOp = document.getElementById('inOperator');
     document.getElementById('outOperator').innerText = selOp.options.length ? selOp.value : "---";
-    
     document.getElementById('outPlat').innerText = document.getElementById('inPlat').value.toUpperCase();
     document.getElementById('outOdo').innerText = document.getElementById('inOdo').value;
 }
 
-// --- API CALLS ---
+// --- SAVE / PRINT PROCESS ---
 function saveSettingsToCloud() {
     document.getElementById('loadingOverlay').style.display = 'flex';
     const payload = {
         action: "updateSettings",
         payload: {
-            spbuName: document.getElementById('setSpbuName').value,
-            spbuCode: document.getElementById('setSpbuCode').value,
-            spbuAddress: document.getElementById('setSpbuAddress').value,
-            footerText: document.getElementById('setFooterText').value,
-            operators: JSON.stringify(operatorList),
-            prices: JSON.stringify(bbmPrices),
-            fontSize: document.getElementById('setFont').value,
-            logoSize: document.getElementById('setLogo').value,
-            logo: base64Logo
+            spbuName: document.getElementById('setSpbuName').value, spbuCode: document.getElementById('setSpbuCode').value,
+            spbuAddress: document.getElementById('setSpbuAddress').value, footerText: document.getElementById('setFooterText').value,
+            operators: JSON.stringify(operatorList), prices: JSON.stringify(bbmPrices), logo: base64Logo,
+            logoSize: document.getElementById('setLogo').value, fontSize: document.getElementById('setFont').value,
+            space_padTop: document.getElementById('setPadTop').value, space_padBottom: document.getElementById('setPadBottom').value, space_logoGap: document.getElementById('setLogoGap').value,
+            style_nameSize: document.getElementById('stNameSize').value, style_nameBold: document.getElementById('stNameBold').checked,
+            style_codeSize: document.getElementById('stCodeSize').value, style_codeBold: document.getElementById('stCodeBold').checked,
+            style_addrSize: document.getElementById('stAddrSize').value, style_addrBold: document.getElementById('stAddrBold').checked,
+            style_footerSize: document.getElementById('stFooterSize').value, style_footerBold: document.getElementById('stFooterBold').checked
         }
     };
-
     fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
-    .then(res => res.json())
-    .then(res => {
+    .then(res => res.json()).then(res => {
         document.getElementById('loadingOverlay').style.display = 'none';
-        alert('Pengaturan Tersimpan!');
-    }).catch(err => {
-         document.getElementById('loadingOverlay').style.display = 'none';
-         alert('Gagal menyimpan.');
+        alert('Pengaturan Global Tersimpan!');
     });
 }
 
-// Kombinasi: Print Dulu, Jika sukses/fallback selesai -> Langsung Simpan
-async function printAndSave() {
-    const btn = document.querySelector('.btn-print');
-    btn.disabled = true;
-    btn.innerText = "Memproses...";
+async function processTransaction() {
+    const btn = document.getElementById('btnProses');
+    btn.disabled = true; btn.innerText = "Memproses...";
 
-    // 1. Eksekusi Print
     if (!navigator.bluetooth) {
-        window.print(); // Fallback Browser Print
-        executeSaveHistory(btn);
+        window.print();
+        executeSave(btn);
     } else {
         try {
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
-                optionalServices: ['0000af30-0000-1000-8000-00805f9b34fb']
-            });
+            const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }], optionalServices: ['0000af30-0000-1000-8000-00805f9b34fb'] });
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
             const char = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-
-            const encoder = new TextEncoder();
-            const CMD_INIT = '\x1B\x40';
-            const CMD_ALIGN_CENTER = '\x1B\x61\x01';
-            const CMD_ALIGN_LEFT = '\x1B\x61\x00';
             
+            const encoder = new TextEncoder();
             const produk = document.getElementById('inProduk').value;
             const selOp = document.getElementById('inOperator');
             const opName = selOp.options.length ? selOp.value : "---";
 
             const receiptText = 
-CMD_INIT + CMD_ALIGN_CENTER + 
-`PERTAMINA\n` + 
-`${document.getElementById('setSpbuName').value}\n` + 
-`${document.getElementById('setSpbuCode').value}\n` + 
-`${document.getElementById('setSpbuAddress').value}\n` + 
-`--------------------------------\n` + 
-CMD_ALIGN_LEFT + 
-`Shift: ${currentShift}  No Trans: ${document.getElementById('outTrans').innerText}\n` +
-`Waktu: ${document.getElementById('outWaktu').innerText}\n` +
-`--------------------------------\n` +
-`Pompa       : ${currentPompa}\n` +
-`Produk      : ${produk}\n` +
-`Harga/L     : Rp ${formatNumber(bbmPrices[produk])}\n` +
-`Volume      : ${document.getElementById('inVolume').value} L\n` +
-`Total       : Rp ${formatNumber(document.getElementById('inTotal').value)}\n` +
-`Operator    : ${opName}\n` +
-`--------------------------------\n` +
-`CASH          ${formatNumber(document.getElementById('inTotal').value)}\n` +
-`--------------------------------\n` +
-`Plat        : ${document.getElementById('inPlat').value.toUpperCase()}\n` +
-`Odo Meter   : ${document.getElementById('inOdo').value}\n` +
-`--------------------------------\n` +
-CMD_ALIGN_CENTER + 
-`${document.getElementById('setFooterText').value}\n\n`; // Spasi dipendekkan sesuai instruksi
+`\x1B\x40\x1B\x61\x01` + 
+`PERTAMINA\n${document.getElementById('setSpbuName').value}\n${document.getElementById('setSpbuCode').value}\n${document.getElementById('setSpbuAddress').value}\n--------------------------------\n\x1B\x61\x00` + 
+`Shift: ${currentShift}  No Trans: ${document.getElementById('outTrans').innerText}\nWaktu: ${document.getElementById('outWaktu').innerText}\n--------------------------------\n` +
+`Pompa       : ${currentPompa}\nProduk      : ${produk}\nHarga/L     : Rp ${formatNumber(bbmPrices[produk])}\nVolume      : ${document.getElementById('inVolume').value} L\nTotal       : Rp ${formatNumber(document.getElementById('inTotal').value)}\nOperator    : ${opName}\n--------------------------------\n` +
+`CASH          ${formatNumber(document.getElementById('inTotal').value)}\n--------------------------------\nPlat        : ${document.getElementById('inPlat').value.toUpperCase()}\nOdo Meter   : ${document.getElementById('inOdo').value}\n--------------------------------\n` +
+`\x1B\x61\x01${document.getElementById('setFooterText').value}\n\n`;
 
             let textBytes = encoder.encode(receiptText);
-            for (let i = 0; i < textBytes.length; i += 100) {
-                await char.writeValue(textBytes.slice(i, i + 100));
-            }
-            executeSaveHistory(btn);
+            for (let i = 0; i < textBytes.length; i += 100) await char.writeValue(textBytes.slice(i, i + 100));
+            executeSave(btn);
         } catch (error) {
             console.error('Bluetooth error:', error);
             window.print();
-            executeSaveHistory(btn);
+            executeSave(btn);
         }
     }
 }
 
-// 2. Eksekusi Simpan Data
-function executeSaveHistory(btnRef) {
+function executeSave(btnRef) {
     const produk = document.getElementById('inProduk').value;
-    const selOp = document.getElementById('inOperator');
-    
     const payload = {
-        waktu: document.getElementById('outWaktu').innerText,
-        noTrans: document.getElementById('outTrans').innerText,
-        shift: currentShift,
-        pompa: currentPompa,
-        produk: produk,
-        harga: bbmPrices[produk],
-        volume: document.getElementById('inVolume').value,
-        total: document.getElementById('inTotal').value,
-        operator: selOp.options.length ? selOp.value : "---",
-        plat: document.getElementById('inPlat').value,
-        odometer: document.getElementById('inOdo').value
+        waktu: document.getElementById('outWaktu').innerText, noTrans: document.getElementById('outTrans').innerText,
+        shift: currentShift, pompa: currentPompa, produk: produk, harga: bbmPrices[produk], volume: document.getElementById('inVolume').value,
+        total: document.getElementById('inTotal').value, operator: document.getElementById('inOperator').value,
+        plat: document.getElementById('inPlat').value, odometer: document.getElementById('inOdo').value
     };
 
-    fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: "saveHistory", payload: payload })
-    }).then(res => res.json()).then(res => {
-        btnRef.disabled = false;
-        btnRef.innerText = "🖨️ Cetak Bluetooth & Simpan";
+    const actionData = editModeTransId ? "updateHistory" : "saveHistory";
+
+    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionData, payload: payload }) })
+    .then(res => res.json()).then(res => {
         if(res.status === 'success') {
-            generatedIDs.push(payload.noTrans);
-            generateRandomID(); // Reset ID
-            document.getElementById('inTotal').value = ''; // Reset Form
-            document.getElementById('inVolume').value = '';
+            if(editModeTransId) {
+                // Update local array agar tabel histori ikut berubah
+                const rowIndex = fullHistoryData.findIndex(r => String(r[1]) === String(editModeTransId));
+                if(rowIndex > -1) fullHistoryData[rowIndex] = [payload.waktu, payload.noTrans, payload.shift, payload.pompa, payload.produk, payload.harga, payload.volume, payload.total, payload.operator, payload.plat, payload.odometer, "Direvisi"];
+                cancelEdit(); 
+            } else {
+                fullHistoryData.push([payload.waktu, payload.noTrans, payload.shift, payload.pompa, payload.produk, payload.harga, payload.volume, payload.total, payload.operator, payload.plat, payload.odometer, "Asli"]);
+                generateRandomID(); 
+                document.getElementById('inTotal').value = '';
+            }
+            renderHistoryTable();
             updatePreview();
-        }
-    }).catch(err => {
+        } else { alert('Gagal: ' + res.message); }
+    }).finally(() => {
         btnRef.disabled = false;
-        btnRef.innerText = "🖨️ Cetak Bluetooth & Simpan";
-        alert("Gagal menyimpan ke Sheet, namun struk telah dicetak.");
+        btnRef.innerText = editModeTransId ? "💾 Cetak Revisi & Update Sheet" : "🖨️ Cetak & Simpan";
     });
 }
