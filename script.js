@@ -54,6 +54,17 @@ function setShift(val) { currentShift = val; const btns = document.getElementByI
 function setPompa(val) { currentPompa = val; generatePompaButtons(); updatePreview(); }
 function formatNumber(num) { return new Intl.NumberFormat('id-ID').format(num || 0); }
 
+// --- HELPER UNTUK MEMBACA DATA DARI GOOGLE SHEETS DENGAN AMAN ---
+function getVal(settingValue, defaultValue) {
+    return (settingValue !== undefined && settingValue !== null) ? settingValue : defaultValue;
+}
+function getBool(settingValue, defaultValue) {
+    if (settingValue !== undefined && settingValue !== null) {
+        return String(settingValue).toLowerCase() === 'true';
+    }
+    return defaultValue;
+}
+
 // --- FETCH DATA ---
 function fetchInitialData() {
     fetch(APPS_SCRIPT_URL)
@@ -63,28 +74,32 @@ function fetchInitialData() {
             renderHistoryTable();
 
             const s = data.settings;
-            // Load Teks
-            document.getElementById('setSpbuName').value = s.spbuName || 'SPBU POLONIA';
-            document.getElementById('setSpbuCode').value = s.spbuCode || '11.201.106';
-            document.getElementById('setSpbuAddress').value = s.spbuAddress || 'JL. Imam Bonjol\nTlp. 0614156892';
-            document.getElementById('setFooterText').value = s.footerText || 'ANDA MENDAPAT SUBSIDI DARI PEMERINTAH.';
+            
+            // Load Teks (Aman walau kolom sengaja dikosongkan)
+            document.getElementById('setSpbuName').value = getVal(s.spbuName, 'SPBU POLONIA');
+            document.getElementById('setSpbuCode').value = getVal(s.spbuCode, '11.201.106');
+            document.getElementById('setSpbuAddress').value = getVal(s.spbuAddress, 'JL. Imam Bonjol\nTlp. 0614156892');
+            document.getElementById('setFooterText').value = getVal(s.footerText, 'ANDA MENDAPAT SUBSIDI DARI PEMERINTAH.');
             
             // Load Basic Styling
-            document.getElementById('setFont').value = s.fontSize || '12';
-            document.getElementById('setLogo').value = s.logoSize || '100';
-            document.getElementById('setPadTop').value = s.space_padTop || '10';
-            document.getElementById('setPadBottom').value = s.space_padBottom || '15';
-            document.getElementById('setLogoGap').value = s.space_logoGap || '5';
+            document.getElementById('setFont').value = getVal(s.fontSize, '12');
+            document.getElementById('setLogo').value = getVal(s.logoSize, '100');
+            document.getElementById('setPadTop').value = getVal(s.space_padTop, '10');
+            document.getElementById('setPadBottom').value = getVal(s.space_padBottom, '15');
+            document.getElementById('setLogoGap').value = getVal(s.space_logoGap, '5');
 
-            // Load Advanced Styling
-            document.getElementById('stNameSize').value = s.style_nameSize || '14';
-            document.getElementById('stNameBold').checked = (s.style_nameBold === 'true');
-            document.getElementById('stCodeSize').value = s.style_codeSize || '12';
-            document.getElementById('stCodeBold').checked = (s.style_codeBold === 'true');
-            document.getElementById('stAddrSize').value = s.style_addrSize || '12';
-            document.getElementById('stAddrBold').checked = (s.style_addrBold === 'true');
-            document.getElementById('stFooterSize').value = s.style_footerSize || '10';
-            document.getElementById('stFooterBold').checked = (s.style_footerBold === 'true');
+            // Load Advanced Styling (Aman dari tipe data Boolean)
+            document.getElementById('stNameSize').value = getVal(s.style_nameSize, '14');
+            document.getElementById('stNameBold').checked = getBool(s.style_nameBold, true);
+            
+            document.getElementById('stCodeSize').value = getVal(s.style_codeSize, '12');
+            document.getElementById('stCodeBold').checked = getBool(s.style_codeBold, false);
+            
+            document.getElementById('stAddrSize').value = getVal(s.style_addrSize, '12');
+            document.getElementById('stAddrBold').checked = getBool(s.style_addrBold, false);
+            
+            document.getElementById('stFooterSize').value = getVal(s.style_footerSize, '10');
+            document.getElementById('stFooterBold').checked = getBool(s.style_footerBold, false);
             
             if(s.logo) {
                 base64Logo = s.logo;
@@ -114,11 +129,9 @@ function fetchInitialData() {
 function renderHistoryTable() {
     const tbody = document.getElementById('historyTbody');
     tbody.innerHTML = '';
-    // Reverse agar yang terbaru di atas
     const displayData = [...fullHistoryData].reverse();
     
     displayData.forEach(row => {
-        // row: [Waktu, NoTrans, Shift, Pompa, Produk, Harga, Vol, Total, Operator, Plat, Odo, Status]
         const tr = document.createElement('tr');
         const statClass = row[11] === 'Direvisi' ? 'badge-revisi' : 'badge-asli';
         const statText = row[11] || 'Asli';
@@ -144,8 +157,6 @@ function editTransaction(noTrans) {
 
     editModeTransId = noTrans;
     
-    // Parse time to input format (very basic parsing based on formatWaktuStruk output)
-    // Row 0 format: "DD/MM/YYYY HH:MM:SS". Need: "YYYY-MM-DDTHH:MM"
     try {
         const p = row[0].split(/[\s/:]/);
         const isoStr = `${p[2]}-${p[1]}-${p[0]}T${p[3]}:${p[4]}`;
@@ -163,12 +174,11 @@ function editTransaction(noTrans) {
     
     calculateVolume();
     
-    // UI Changes for Edit Mode
     document.getElementById('editAlert').classList.remove('d-none');
     document.getElementById('btnBatalEdit').classList.remove('d-none');
     document.getElementById('btnAcak').disabled = true;
     document.getElementById('btnProses').innerText = "💾 Cetak Revisi & Update Sheet";
-    document.getElementById('btnProses').classList.replace('btn-success', 'btn-warning');
+    document.getElementById('btnProses').classList.replace('btn-primary', 'btn-warning');
 
     switchTab('tab-input', document.querySelectorAll('.nav-btn')[0]);
 }
@@ -179,7 +189,7 @@ function cancelEdit() {
     document.getElementById('btnBatalEdit').classList.add('d-none');
     document.getElementById('btnAcak').disabled = false;
     document.getElementById('btnProses').innerText = "🖨️ Cetak & Simpan";
-    document.getElementById('btnProses').classList.replace('btn-warning', 'btn-success');
+    document.getElementById('btnProses').classList.replace('btn-warning', 'btn-primary');
     document.getElementById('inTotal').value = '';
     setDefaultTime();
     generateRandomID();
@@ -266,7 +276,6 @@ function generateRandomID() {
 
 function updatePreview() {
     const root = document.documentElement;
-    // Set Basic Font & Spacing variables
     document.getElementById('fontVal').innerText = document.getElementById('setFont').value;
     document.getElementById('logoVal').innerText = document.getElementById('setLogo').value;
     document.getElementById('padTopVal').innerText = document.getElementById('setPadTop').value;
@@ -279,7 +288,6 @@ function updatePreview() {
     root.style.setProperty('--pad-bottom', document.getElementById('setPadBottom').value + 'px');
     root.style.setProperty('--logo-gap', document.getElementById('setLogoGap').value + 'px');
 
-    // Set Advanced Styling Variables
     root.style.setProperty('--spbu-name-size', Math.max(5, document.getElementById('stNameSize').value) + 'px');
     root.style.setProperty('--spbu-name-weight', document.getElementById('stNameBold').checked ? 'bold' : 'normal');
     
@@ -292,7 +300,6 @@ function updatePreview() {
     root.style.setProperty('--footer-size', Math.max(5, document.getElementById('stFooterSize').value) + 'px');
     root.style.setProperty('--footer-weight', document.getElementById('stFooterBold').checked ? 'bold' : 'normal');
 
-    // Set Texts
     document.getElementById('outSpbuName').innerText = document.getElementById('setSpbuName').value;
     document.getElementById('outSpbuCode').innerText = document.getElementById('setSpbuCode').value;
     document.getElementById('outSpbuAddress').innerText = document.getElementById('setSpbuAddress').value;
@@ -394,7 +401,6 @@ function executeSave(btnRef) {
     .then(res => res.json()).then(res => {
         if(res.status === 'success') {
             if(editModeTransId) {
-                // Update local array agar tabel histori ikut berubah
                 const rowIndex = fullHistoryData.findIndex(r => String(r[1]) === String(editModeTransId));
                 if(rowIndex > -1) fullHistoryData[rowIndex] = [payload.waktu, payload.noTrans, payload.shift, payload.pompa, payload.produk, payload.harga, payload.volume, payload.total, payload.operator, payload.plat, payload.odometer, "Direvisi"];
                 cancelEdit(); 
