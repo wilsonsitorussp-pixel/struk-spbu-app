@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Struk SPBU Terpusat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loadingOverlay">Mengambil Data Server...</div>
+
+    <div class="container">
+        <!-- Panel Setting & Input -->
+        <div class="panel controls">
+            <h2>Pengaturan Global (Tersimpan di Cloud)</h2>
+            <div class="settings-group">
+                <label>Nama SPBU: <input type="text" id="setSpbuName" oninput="updatePreview()"></label>
+                <label>Alamat & Telp: <textarea id="setSpbuAddress" rows="2" oninput="updatePreview()"></textarea></label>
+                <label>Pesan Footer: <textarea id="setFooterText" rows="3" oninput="updatePreview()"></textarea></label>
+                <label>Nama Operator: <input type="text" id="setOperator" oninput="updatePreview()"></label>
+                <label>Harga Pertamax (Rp): <input type="number" id="setHarga" oninput="calculateVolume()"></label>
+                
+                <div class="slider-group">
+                    <label>Ukuran Font: <span id="fontVal">12</span>px</label>
+                    <input type="range" id="setFont" min="10" max="18" value="12" oninput="updatePreview()">
+                </div>
+                <div class="slider-group">
+                    <label>Ukuran Logo: <span id="logoVal">100</span>px</label>
+                    <input type="range" id="setLogo" min="50" max="150" value="100" oninput="updatePreview()">
+                </div>
+                <button onclick="saveSettingsToCloud()" class="btn-save">Simpan Pengaturan Global</button>
+            </div>
+
+            <hr>
+
+            <h2>Input Transaksi</h2>
+            <div class="input-group">
+                <label>Shift: <input type="number" id="inShift" value="2" oninput="updatePreview()"></label>
+                <label>Pulau/Pompa: <input type="number" id="inPompa" value="12" oninput="updatePreview()"></label>
+                <label>Produk: <input type="text" id="inProduk" value="PERTAMAX" oninput="updatePreview()"></label>
+                <label>Total Beli (Rp): <input type="number" id="inTotal" oninput="calculateVolume()"></label>
+                <label>Volume (L): <input type="number" id="inVolume" step="0.01" readonly></label>
+                <label>No. Plat: <input type="text" id="inPlat" value="BK 2854 ADK" oninput="updatePreview()"></label>
+                <label>Odo Meter: <input type="text" id="inOdo" value="59.915" oninput="updatePreview()"></label>
+                
+                <div class="action-buttons">
+                    <button onclick="generateRandomID()">Acak No Trans</button>
+                    <button onclick="printESC()" class="btn-print">Print (Bluetooth)</button>
+                    <button onclick="saveToHistory()">Simpan Transaksi</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Preview Struk (58mm) -->
+        <div class="panel preview-container">
+            <h2>Preview (Realtime)</h2>
+            <div id="receipt" class="receipt-58mm">
+                <div class="header center">
+                    <img id="logoPreview" src="https://upload.wikimedia.org/wikipedia/id/thumb/0/05/Pertamina_Logo.svg/1200px-Pertamina_Logo.svg.png" alt="Logo">
+                    <br><strong id="outSpbuName">SPBU POLONIA</strong><br>
+                    <div id="outSpbuAddress" style="white-space: pre-wrap;">JL. Imam Bonjol, Medan Polonia\nTlp. 0614156892</div>
+                </div>
+                <div class="divider">--------------------------------</div>
+                <div class="info">
+                    <span class="left">Shift: <span id="outShift">2</span></span>
+                    <span class="right">No. Trans: <span id="outTrans">379629</span></span>
+                </div>
+                <div class="info">
+                    Waktu : <span id="outWaktu">02/03/2026 15:38:56</span>
+                </div>
+                <div class="divider">--------------------------------</div>
+                <table class="details">
+                    <tr><td>Pulau/Pompa</td><td>: <span id="outPompa">12</span></td></tr>
+                    <tr><td>Nama Produk</td><td>: <span id="outProduk">PERTAMAX</span></td></tr>
+                    <tr><td>Harga/Liter</td><td>: Rp <span id="outHarga">12.600</span></td></tr>
+                    <tr><td>Volume</td><td>: (L) <span id="outVolume">5.5</span></td></tr>
+                    <tr><td>Total Harga</td><td>: Rp <span id="outTotal">69.300</span></td></tr>
+                    <tr><td>Operator</td><td>: <span id="outOperator">MHD RIZKY</span></td></tr>
+                </table>
+                <div class="divider">--------------------------------</div>
+                <div class="info total-cash">
+                    <span class="left">CASH</span>
+                    <span class="right" id="outCash">69.300</span>
+                </div>
+                <div class="divider">--------------------------------</div>
+                <table class="details">
+                    <tr><td>No. Plat</td><td>: <span id="outPlat">BK 2854 ADK</span></td></tr>
+                    <tr><td>Odo Meter</td><td>: <span id="outOdo">59.915</span></td></tr>
+                </table>
+                <div class="divider">--------------------------------</div>
+                <div class="footer center" id="outFooter" style="white-space: pre-wrap;">
+                    ANDA MENDAPAT SUBSIDI DARI PEMERINTAH. GUNAKAN SECARA BIJAK.
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
