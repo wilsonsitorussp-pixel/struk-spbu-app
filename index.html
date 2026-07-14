@@ -81,6 +81,7 @@
         .center { text-align: center; } .left { float: left; } .right { float: right; }
         .info { overflow: hidden; margin-bottom: 2px; display: flex; justify-content: space-between; }
         .divider { margin: 5px 0; border-top: 1px dashed black; color: transparent; height: 1px; }
+        #dividerAfterAddress { margin-top: var(--addr-gap); }
         .pre-line { white-space: pre-line; }
         
         table.details { width: 100%; border-collapse: collapse; }
@@ -90,7 +91,7 @@
         #logoPreview { width: var(--logo-size); max-width: 100%; height: auto; filter: grayscale(100%); object-fit: contain; margin: 0 auto var(--logo-gap) auto; display: none;}
         #outSpbuName { font-size: var(--spbu-name-size); font-weight: var(--spbu-name-weight); }
         #outSpbuCode { font-size: var(--spbu-code-size); font-weight: var(--spbu-code-weight); }
-        #outSpbuAddress { font-size: var(--spbu-addr-size); font-weight: var(--spbu-addr-weight); margin-bottom: var(--addr-gap); }
+        #outSpbuAddress { font-size: var(--spbu-addr-size); font-weight: var(--spbu-addr-weight); margin-bottom: 0; }
         #outFooter { font-size: var(--footer-size); font-weight: var(--footer-weight); }
         
         @media print {
@@ -283,7 +284,7 @@
                         <div id="outSpbuCode">11.201.106</div>
                         <div id="outSpbuAddress" class="pre-line">JL. Imam Bonjol, Medan Polonia\nTlp. 0614156892</div>
                     </div>
-                    <div class="divider">--------------------------------</div>
+                    <div class="divider" id="dividerAfterAddress">--------------------------------</div>
                     <div class="info">
                         <span>Shift: <span id="outShift">2</span></span>
                         <span>No. Trans: <span id="outTrans">---</span></span>
@@ -599,7 +600,7 @@ function updatePreview() {
     outSpbuNameEl.innerText = document.getElementById('setSpbuName').value;
     outSpbuNameEl.style.display = showNameText ? '' : 'none';
     document.getElementById('outSpbuCode').innerText = document.getElementById('setSpbuCode').value;
-    document.getElementById('outSpbuAddress').innerText = document.getElementById('setSpbuAddress').value;
+    document.getElementById('outSpbuAddress').innerText = document.getElementById('setSpbuAddress').value.replace(/\s+$/, '');
     document.getElementById('outFooter').innerText = document.getElementById('setFooterText').value;
     
     document.getElementById('outWaktu').innerText = formatWaktuStruk(document.getElementById('inWaktu').value);
@@ -735,7 +736,7 @@ async function processTransaction() {
             
             const spbuNameStr = wrapBold(document.getElementById('setSpbuName').value, document.getElementById('stNameBold').checked);
             const spbuCodeStr = wrapBold(document.getElementById('setSpbuCode').value, document.getElementById('stCodeBold').checked);
-            const spbuAddrStr = wrapBold(document.getElementById('setSpbuAddress').value, document.getElementById('stAddrBold').checked);
+            const spbuAddrStr = wrapBold(document.getElementById('setSpbuAddress').value.replace(/\s+$/, ''), document.getElementById('stAddrBold').checked);
             const footerStr = wrapBold(document.getElementById('setFooterText').value, document.getElementById('stFooterBold').checked);
 
             const produk = document.getElementById('inProduk').value;
