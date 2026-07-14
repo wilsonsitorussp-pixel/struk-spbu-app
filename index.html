@@ -8,12 +8,13 @@
         :root {
             --primary: #0056b3; --secondary: #6c757d; --success: #28a745; --danger: #dc3545; --warning: #ffc107;
             --bg: #f4f7f6; --card-bg: #ffffff; --text: #333333;
-            --font-size: 12px; --logo-size: 100px;
-            --spbu-name-size: 14px; --spbu-name-weight: normal;
+            --font-size: 12px; --logo-size: 60%;
+            --spbu-name-size: 14px; --spbu-name-weight: bold;
             --spbu-code-size: 12px; --spbu-code-weight: normal;
             --spbu-addr-size: 12px; --spbu-addr-weight: normal;
             --footer-size: 10px; --footer-weight: normal;
-            --pad-top: 10px; --pad-bottom: 15px; --logo-gap: 5px;
+            --pad-top: 10px; --pad-bottom: 15px; --logo-gap: 5px; --addr-gap: 0px;
+            --char-width: 32;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: var(--bg); margin: 0; padding: 0; color: var(--text); }
@@ -78,7 +79,7 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-radius: 2px;
         }
         .center { text-align: center; } .left { float: left; } .right { float: right; }
-        .info { overflow: hidden; margin-bottom: 2px; }
+        .info { overflow: hidden; margin-bottom: 2px; display: flex; justify-content: space-between; }
         .divider { margin: 5px 0; border-top: 1px dashed black; color: transparent; height: 1px; }
         .pre-line { white-space: pre-line; }
         
@@ -86,10 +87,10 @@
         table.details td { vertical-align: top; padding: 1px 0; font-size: var(--font-size); }
         table.details td:first-child { width: 45%; }
         
-        #logoPreview { width: var(--logo-size); filter: grayscale(100%); object-fit: contain; margin-bottom: var(--logo-gap); display: none;}
+        #logoPreview { width: var(--logo-size); max-width: 100%; height: auto; filter: grayscale(100%); object-fit: contain; margin: 0 auto var(--logo-gap) auto; display: none;}
         #outSpbuName { font-size: var(--spbu-name-size); font-weight: var(--spbu-name-weight); }
         #outSpbuCode { font-size: var(--spbu-code-size); font-weight: var(--spbu-code-weight); }
-        #outSpbuAddress { font-size: var(--spbu-addr-size); font-weight: var(--spbu-addr-weight); }
+        #outSpbuAddress { font-size: var(--spbu-addr-size); font-weight: var(--spbu-addr-weight); margin-bottom: var(--addr-gap); }
         #outFooter { font-size: var(--footer-size); font-weight: var(--footer-weight); }
         
         @media print {
@@ -97,7 +98,7 @@
             nav, .left-panel, h3, #loadingOverlay { display: none !important; }
             .right-panel { display: block; padding: 0; }
             .preview-container { position: static; box-shadow: none; }
-            .receipt-58mm { box-shadow: none; padding: var(--pad-top) 0 var(--pad-bottom) 0; margin: 0; }
+            .receipt-58mm { box-shadow: none; padding: var(--pad-top) 0 var(--pad-bottom) 0; margin: 0; width: 58mm;}
         }
         @media (min-width: 768px) {
             .main-layout { flex-direction: row; } .top-nav { display: none; } .tab-content { display: block; animation: none; }
@@ -207,6 +208,7 @@
                             <label>Ukuran: <input type="number" id="stNameSize" min="5" value="14" oninput="updatePreview()"> px</label>
                             <label><input type="checkbox" id="stNameBold" onchange="updatePreview()"> Bold</label>
                         </div>
+                        <label class="mt-2"><input type="checkbox" id="setShowNameText" checked onchange="updatePreview()"> Tampilkan Nama SPBU sebagai teks (matikan jika logo sudah memuat tulisan nama/brand, agar tidak dobel)</label>
                     </div>
 
                     <div class="styling-box mt-3">
@@ -241,10 +243,12 @@
                         <label>Upload Logo</label>
                         <input type="file" id="uploadLogo" accept="image/*" onchange="handleLogoUpload(event)">
                     </div>
-                    <div class="slider-group"><label>Ukuran Logo (px): <span id="logoVal">100</span></label><input type="range" id="setLogo" min="30" max="200" value="100" oninput="updatePreview()"></div>
-                    <div class="slider-group"><label>Jarak Atas (px): <span id="padTopVal">10</span></label><input type="range" id="setPadTop" min="0" max="100" value="10" oninput="updatePreview()"></div>
+                    <div class="slider-group"><label>Ukuran Logo (% lebar kertas): <span id="logoVal">60</span>%</label><input type="range" id="setLogo" min="10" max="100" value="60" oninput="updatePreview()"></div>
+                    <div class="slider-group"><label>Jarak Alamat ke Garis Batas (baris kosong): <span id="addrGapVal">0</span></label><input type="range" id="setAddrGap" min="0" max="5" value="0" step="1" oninput="updatePreview()"></div>
+                    <div class="slider-group"><label>Jarak Atas Kertas (px): <span id="padTopVal">10</span></label><input type="range" id="setPadTop" min="0" max="100" value="10" oninput="updatePreview()"></div>
                     <div class="slider-group"><label>Jarak Bawah Kertas (px): <span id="padBottomVal">15</span></label><input type="range" id="setPadBottom" min="0" max="200" value="15" oninput="updatePreview()"></div>
                     <div class="slider-group"><label>Jarak Logo ke Nama (px): <span id="logoGapVal">5</span></label><input type="range" id="setLogoGap" min="0" max="50" value="5" oninput="updatePreview()"></div>
+                    <div class="slider-group"><label>Lebar Kolom Kertas (karakter, untuk perataan kanan seperti No. Trans): <span id="charWidthVal">32</span></label><input type="range" id="setCharWidth" min="24" max="48" value="32" step="1" oninput="updatePreview()"></div>
 
                     <h2 class="section-title mt-4">Manajemen Umum</h2>
                     <label>Ukuran Font Detail Struk (Basic): <span id="fontVal">12</span>px</label>
@@ -277,33 +281,33 @@
                         <img id="logoPreview" src="" alt="Logo">
                         <div id="outSpbuName">SPBU POLONIA</div>
                         <div id="outSpbuCode">11.201.106</div>
-                        <div id="outSpbuAddress" class="pre-line">JL. Imam Bonjol\nTlp. 0614156892</div>
+                        <div id="outSpbuAddress" class="pre-line">JL. Imam Bonjol, Medan Polonia\nTlp. 0614156892</div>
                     </div>
                     <div class="divider">--------------------------------</div>
                     <div class="info">
-                        <span class="left">Shift: <span id="outShift">2</span></span>
-                        <span class="right">No Trans: <span id="outTrans">---</span></span>
+                        <span>Shift: <span id="outShift">2</span></span>
+                        <span>No. Trans: <span id="outTrans">---</span></span>
                     </div>
-                    <div class="info">
+                    <div class="info" style="display:block">
                         Waktu : <span id="outWaktu">02/03/2026 15:38:56</span>
                     </div>
                     <div class="divider">--------------------------------</div>
                     <table class="details">
-                        <tr><td>Pompa</td><td>: <span id="outPompa">12</span></td></tr>
-                        <tr><td>Produk</td><td>: <span id="outProduk">PERTAMAX</span></td></tr>
-                        <tr><td>Harga/L</td><td>: Rp <span id="outHarga">12.600</span></td></tr>
-                        <tr><td>Volume</td><td>: <span id="outVolume">0.00</span> L</td></tr>
-                        <tr><td>Total</td><td>: Rp <span id="outTotal">0</span></td></tr>
+                        <tr><td>Pulau/Pompa</td><td>: <span id="outPompa">12</span></td></tr>
+                        <tr><td>Nama Produk</td><td>: <span id="outProduk">PERTAMAX</span></td></tr>
+                        <tr><td>Harga/Liter</td><td>: Rp <span id="outHarga">12.600</span></td></tr>
+                        <tr><td>Volume</td><td>: (L) <span id="outVolume">0.00</span></td></tr>
+                        <tr><td>Total Harga</td><td>: Rp <span id="outTotal">0</span></td></tr>
                         <tr><td>Operator</td><td>: <span id="outOperator">---</span></td></tr>
                     </table>
                     <div class="divider">--------------------------------</div>
                     <div class="info total-cash">
-                        <span class="left">CASH</span>
-                        <span class="right" id="outCash">0</span>
+                        <span>CASH</span>
+                        <span id="outCash">0</span>
                     </div>
                     <div class="divider">--------------------------------</div>
                     <table class="details">
-                        <tr><td>Plat</td><td>: <span id="outPlat">BK 2854 ADK</span></td></tr>
+                        <tr><td>No. Plat</td><td>: <span id="outPlat">BK 2854 ADK</span></td></tr>
                         <tr><td>Odo Meter</td><td>: <span id="outOdo">59.915</span></td></tr>
                     </table>
                     <div class="divider">--------------------------------</div>
@@ -373,11 +377,10 @@ function setShift(val) { currentShift = val; const btns = document.getElementByI
 function setPompa(val) { currentPompa = val; generatePompaButtons(); updatePreview(); }
 function formatNumber(num) { return new Intl.NumberFormat('id-ID').format(num || 0); }
 
-// Helper
+// Helper Pembacaan Setting Database
 function getVal(settingValue, defaultValue) { return (settingValue !== undefined && settingValue !== null) ? settingValue : defaultValue; }
 function getBool(settingValue, defaultValue) { return (settingValue !== undefined && settingValue !== null) ? String(settingValue).toLowerCase() === 'true' : defaultValue; }
 
-// Fetch Initial Data
 function fetchInitialData() {
     fetch(APPS_SCRIPT_URL)
         .then(res => res.json())
@@ -388,14 +391,27 @@ function fetchInitialData() {
             const s = data.settings;
             document.getElementById('setSpbuName').value = getVal(s.spbuName, 'SPBU POLONIA');
             document.getElementById('setSpbuCode').value = getVal(s.spbuCode, '11.201.106');
-            document.getElementById('setSpbuAddress').value = getVal(s.spbuAddress, 'JL. Imam Bonjol\nTlp. 0614156892');
-            document.getElementById('setFooterText').value = getVal(s.footerText, 'ANDA MENDAPAT SUBSIDI DARI PEMERINTAH.');
+            document.getElementById('setSpbuAddress').value = getVal(s.spbuAddress, 'JL. Imam Bonjol, Medan Polonia\nTlp. 0614156892');
+            document.getElementById('setFooterText').value = getVal(s.footerText, 'ANDA MENDAPAT SUBSIDI DARI PEMERINTAH.\nGUNAKAN SECARA BIJAK.');
             
             document.getElementById('setFont').value = getVal(s.fontSize, '12');
-            document.getElementById('setLogo').value = getVal(s.logoSize, '100');
+
+            // Migrasi otomatis: nilai logoSize lama disimpan dalam px (bisa >100), sekarang pakai persen (10-100)
+            let logoSizeRaw = parseInt(getVal(s.logoSize, '60')) || 60;
+            if (logoSizeRaw > 100) logoSizeRaw = 60;
+            document.getElementById('setLogo').value = logoSizeRaw;
+
             document.getElementById('setPadTop').value = getVal(s.space_padTop, '10');
             document.getElementById('setPadBottom').value = getVal(s.space_padBottom, '15');
             document.getElementById('setLogoGap').value = getVal(s.space_logoGap, '5');
+
+            // Migrasi otomatis: nilai addrGap lama bisa sampai 50 (px), sekarang pakai jumlah baris kosong (0-5)
+            let addrGapRaw = parseInt(getVal(s.space_addrGap, '0')) || 0;
+            if (addrGapRaw > 5) addrGapRaw = 1;
+            document.getElementById('setAddrGap').value = addrGapRaw;
+
+            document.getElementById('setCharWidth').value = getVal(s.charWidth, '32');
+            document.getElementById('setShowNameText').checked = getBool(s.showNameText, true);
 
             document.getElementById('stNameSize').value = getVal(s.style_nameSize, '14');
             document.getElementById('stNameBold').checked = getBool(s.style_nameBold, true);
@@ -476,6 +492,7 @@ function cancelEdit() {
     document.getElementById('btnProses').innerText = "🖨️ Cetak & Simpan";
     document.getElementById('btnProses').classList.replace('btn-warning', 'btn-primary');
     document.getElementById('inTotal').value = '';
+    document.getElementById('inVolume').value = ''; // FIX BUGS VOLUME MENGGANTUNG
     setDefaultTime(); generateRandomID();
 }
 
@@ -522,7 +539,11 @@ function updatePrices() {
 function calculateVolume() {
     const produk = document.getElementById('inProduk').value;
     const total = parseFloat(document.getElementById('inTotal').value) || 0;
-    document.getElementById('inVolume').value = (bbmPrices[produk] > 0) ? (total / bbmPrices[produk]).toFixed(2) : "0.00";
+    if(total > 0 && bbmPrices[produk] > 0) {
+        document.getElementById('inVolume').value = (total / bbmPrices[produk]).toFixed(2);
+    } else {
+        document.getElementById('inVolume').value = "";
+    }
     updatePreview();
 }
 
@@ -552,12 +573,17 @@ function updatePreview() {
     document.getElementById('padTopVal').innerText = document.getElementById('setPadTop').value;
     document.getElementById('padBottomVal').innerText = document.getElementById('setPadBottom').value;
     document.getElementById('logoGapVal').innerText = document.getElementById('setLogoGap').value;
+    document.getElementById('addrGapVal').innerText = document.getElementById('setAddrGap').value;
+    document.getElementById('charWidthVal').innerText = document.getElementById('setCharWidth').value;
     
     root.style.setProperty('--font-size', document.getElementById('setFont').value + 'px');
-    root.style.setProperty('--logo-size', document.getElementById('setLogo').value + 'px');
+    root.style.setProperty('--logo-size', document.getElementById('setLogo').value + '%');
     root.style.setProperty('--pad-top', document.getElementById('setPadTop').value + 'px');
     root.style.setProperty('--pad-bottom', document.getElementById('setPadBottom').value + 'px');
     root.style.setProperty('--logo-gap', document.getElementById('setLogoGap').value + 'px');
+    // 1 baris kosong pada thermal receipt kira-kira setara 1 baris teks (font-size * line-height)
+    const lineHeightPx = Math.round(parseInt(document.getElementById('setFont').value || 12) * 1.2);
+    root.style.setProperty('--addr-gap', (parseInt(document.getElementById('setAddrGap').value || 0) * lineHeightPx) + 'px');
 
     root.style.setProperty('--spbu-name-size', Math.max(5, document.getElementById('stNameSize').value) + 'px');
     root.style.setProperty('--spbu-name-weight', document.getElementById('stNameBold').checked ? 'bold' : 'normal');
@@ -568,7 +594,10 @@ function updatePreview() {
     root.style.setProperty('--footer-size', Math.max(5, document.getElementById('stFooterSize').value) + 'px');
     root.style.setProperty('--footer-weight', document.getElementById('stFooterBold').checked ? 'bold' : 'normal');
 
-    document.getElementById('outSpbuName').innerText = document.getElementById('setSpbuName').value;
+    const showNameText = document.getElementById('setShowNameText').checked;
+    const outSpbuNameEl = document.getElementById('outSpbuName');
+    outSpbuNameEl.innerText = document.getElementById('setSpbuName').value;
+    outSpbuNameEl.style.display = showNameText ? '' : 'none';
     document.getElementById('outSpbuCode').innerText = document.getElementById('setSpbuCode').value;
     document.getElementById('outSpbuAddress').innerText = document.getElementById('setSpbuAddress').value;
     document.getElementById('outFooter').innerText = document.getElementById('setFooterText').value;
@@ -581,10 +610,10 @@ function updatePreview() {
     document.getElementById('outProduk').innerText = produk;
     document.getElementById('outHarga').innerText = formatNumber(bbmPrices[produk]);
     
-    const total = document.getElementById('inTotal').value;
+    const total = document.getElementById('inTotal').value || 0;
     document.getElementById('outTotal').innerText = formatNumber(total);
     document.getElementById('outCash').innerText = formatNumber(total);
-    document.getElementById('outVolume').innerText = document.getElementById('inVolume').value;
+    document.getElementById('outVolume').innerText = document.getElementById('inVolume').value || "0.00";
     
     const selOp = document.getElementById('inOperator');
     document.getElementById('outOperator').innerText = selOp.options.length ? selOp.value : "---";
@@ -601,7 +630,9 @@ function saveSettingsToCloud() {
             spbuAddress: document.getElementById('setSpbuAddress').value, footerText: document.getElementById('setFooterText').value,
             operators: JSON.stringify(operatorList), prices: JSON.stringify(bbmPrices), logo: base64Logo,
             logoSize: document.getElementById('setLogo').value, fontSize: document.getElementById('setFont').value,
-            space_padTop: document.getElementById('setPadTop').value, space_padBottom: document.getElementById('setPadBottom').value, space_logoGap: document.getElementById('setLogoGap').value,
+            space_padTop: document.getElementById('setPadTop').value, space_padBottom: document.getElementById('setPadBottom').value, 
+            space_logoGap: document.getElementById('setLogoGap').value, space_addrGap: document.getElementById('setAddrGap').value,
+            charWidth: document.getElementById('setCharWidth').value, showNameText: document.getElementById('setShowNameText').checked,
             style_nameSize: document.getElementById('stNameSize').value, style_nameBold: document.getElementById('stNameBold').checked,
             style_codeSize: document.getElementById('stCodeSize').value, style_codeBold: document.getElementById('stCodeBold').checked,
             style_addrSize: document.getElementById('stAddrSize').value, style_addrBold: document.getElementById('stAddrBold').checked,
@@ -615,31 +646,38 @@ function saveSettingsToCloud() {
     });
 }
 
-// Helper untuk meratakan text mentok kanan/kiri (Total 32 karakter untuk kertas 58mm)
-function padLine(leftText, rightText, maxChar = 32) {
+// Helper perataan teks spasi mentok Kiri - Kanan (lebar kolom mengikuti setting setCharWidth)
+function padLine(leftText, rightText, maxChar) {
+    if (!maxChar) maxChar = parseInt(document.getElementById('setCharWidth')?.value) || 32;
+    leftText = String(leftText); rightText = String(rightText);
     let spaceCount = maxChar - leftText.length - rightText.length;
     if (spaceCount < 1) spaceCount = 1; 
     return leftText + " ".repeat(spaceCount) + rightText;
 }
 
-// Convert Base64 ke Array Bita Monokrom untuk Printer ESC/POS (GS v 0)
-async function getLogoESCBytes(base64Str, maxSize = 384) {
+// Convert Logo ke ESC/POS Bita. Disinkronkan persis dengan lebar slider setLogo
+async function getLogoESCBytes(base64Str, targetWidthDots) {
     if (!base64Str || base64Str === "") return new Uint8Array(0);
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            let width = img.width; let height = img.height;
-            if (width > maxSize) { height = Math.round(height * (maxSize / width)); width = maxSize; }
-            width = Math.floor(width / 8) * 8; 
+            
+            // Force Width berdasar setting dari UI, dipaskan ke kelipatan 8
+            let width = Math.floor(targetWidthDots / 8) * 8; 
+            if(width < 24) width = 24; // Limit minimal
+            let height = Math.round(img.height * (width / img.width));
+            
             canvas.width = width; canvas.height = height;
             ctx.fillStyle = 'white'; ctx.fillRect(0, 0, width, height);
             ctx.drawImage(img, 0, 0, width, height);
+            
             const pixels = ctx.getImageData(0, 0, width, height).data;
             const xL = Math.floor(width / 8) % 256; const xH = Math.floor(Math.floor(width / 8) / 256);
             const yL = height % 256; const yH = Math.floor(height / 256);
             const data = [0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH];
+            
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x += 8) {
                     let byte = 0;
@@ -658,12 +696,31 @@ async function getLogoESCBytes(base64Str, maxSize = 384) {
     });
 }
 
+// Menunggu proses cetak benar-benar selesai sebelum menjalankan callback (mis. mengosongkan form).
+// PENTING: sebelumnya form langsung dikosongkan + updatePreview() dipanggil ulang tepat setelah window.print(),
+// padahal di banyak browser/aplikasi cetak Android, window.print() tidak blocking -> field & tampilan struk
+// (Total/Cash) sempat ter-reset ke 0 SEBELUM halaman selesai di-render/dicetak. Ini yang menyebabkan
+// "Total: Rp 0" muncul di hasil cetak meski datanya sudah benar tersimpan di Google Sheet.
+function triggerPrint(callback) {
+    let done = false;
+    const finish = () => { if (!done) { done = true; window.onafterprint = null; callback(); } };
+    window.onafterprint = finish;
+    window.print();
+    setTimeout(finish, 1200); // fallback jika event afterprint tidak terpicu (umum di WebView Android)
+}
+
 async function processTransaction() {
+    const totalInput = document.getElementById('inTotal').value;
+    if(!totalInput || totalInput <= 0) {
+        alert("Mohon isi Total Beli (Rp) terlebih dahulu!");
+        return;
+    }
+
     const btn = document.getElementById('btnProses');
     btn.disabled = true; btn.innerText = "Memproses...";
+    
     if (!navigator.bluetooth) {
-        window.print();
-        executeSave(btn);
+        triggerPrint(() => executeSave(btn));
     } else {
         try {
             const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }], optionalServices: ['0000af30-0000-1000-8000-00805f9b34fb'] });
@@ -683,21 +740,69 @@ async function processTransaction() {
 
             const produk = document.getElementById('inProduk').value;
             const opName = document.getElementById('inOperator').value || "---";
+            const charWidth = parseInt(document.getElementById('setCharWidth').value) || 32;
+            const dividerLine = '-'.repeat(charWidth);
 
-            let textOutput = CMD_INIT + CMD_ALIGN_CENTER + `PERTAMINA\n` + `${spbuNameStr}\n${spbuCodeStr}\n${spbuAddrStr}\n--------------------------------\n\x1B\x61\x00` + 
-`Shift: ${currentShift}  No Trans: ${document.getElementById('outTrans').innerText}\nWaktu: ${document.getElementById('outWaktu').innerText}\n--------------------------------\n` +
-`Pompa       : ${currentPompa}\nProduk      : ${produk}\nHarga/L     : Rp ${formatNumber(bbmPrices[produk])}\nVolume      : ${document.getElementById('inVolume').value} L\nTotal       : Rp ${formatNumber(document.getElementById('inTotal').value)}\nOperator    : ${opName}\n--------------------------------\n` +
-padLine('CASH', formatNumber(document.getElementById('inTotal').value)) + `\n--------------------------------\n` +
-`Plat        : ${document.getElementById('inPlat').value.toUpperCase()}\nOdo Meter   : ${document.getElementById('inOdo').value}\n--------------------------------\n` +
-CMD_ALIGN_CENTER + `${footerStr}\n\n` + "\n".repeat(Math.max(2, Math.floor(document.getElementById('setPadBottom').value / 15)));
+            // Header - Nama SPBU dkk (Nama SPBU dilewati jika toggle "Tampilkan Nama SPBU sebagai teks" dimatikan,
+            // agar tidak dobel dengan tulisan yang sudah ada di gambar logo)
+            let textOutput = CMD_INIT + CMD_ALIGN_CENTER;
+            const headerLines = [];
+            if (document.getElementById('setShowNameText').checked) headerLines.push(spbuNameStr);
+            headerLines.push(spbuCodeStr, spbuAddrStr);
+            textOutput += headerLines.join('\n') + '\n';
+            
+            // Jarak Alamat ke Bawah (dalam baris kosong)
+            const addrGap = parseInt(document.getElementById('setAddrGap').value) || 0;
+            if(addrGap > 0) textOutput += "\n".repeat(addrGap);
 
-            const logoBytes = await getLogoESCBytes(base64Logo);
+            textOutput += `${dividerLine}\n` + CMD_ALIGN_LEFT;
+            
+            // Format Renggang Kanan-Kiri
+            textOutput += padLine(`Shift: ${currentShift}`, `No. Trans: ${document.getElementById('outTrans').innerText}`, charWidth) + `\n`;
+            textOutput += `Waktu : ${document.getElementById('outWaktu').innerText}\n`;
+            textOutput += `${dividerLine}\n`;
+            
+            // Format Detail Transaksi Seragam
+            const padItem = (lbl, val) => (lbl.padEnd(12, ' ')) + `: ${val}\n`;
+            textOutput += padItem('Pulau/Pompa', currentPompa);
+            textOutput += padItem('Nama Produk', produk);
+            textOutput += padItem('Harga/Liter', `Rp ${formatNumber(bbmPrices[produk])}`);
+            textOutput += padItem('Volume', `(L) ${document.getElementById('inVolume').value}`);
+            textOutput += padItem('Total Harga', `Rp ${formatNumber(totalInput)}`);
+            textOutput += padItem('Operator', opName);
+            
+            textOutput += `${dividerLine}\n`;
+            // Cash Mentok Kanan
+            textOutput += padLine('CASH', formatNumber(totalInput), charWidth) + `\n`;
+            textOutput += `${dividerLine}\n`;
+            
+            textOutput += padItem('No. Plat', document.getElementById('inPlat').value.toUpperCase());
+            textOutput += padItem('Odo Meter', document.getElementById('inOdo').value);
+            
+            textOutput += `${dividerLine}\n` + CMD_ALIGN_CENTER;
+            textOutput += `${footerStr}\n\n`;
+            
+            // Padding Pemotong Kertas
+            textOutput += "\n".repeat(Math.max(2, Math.floor(document.getElementById('setPadBottom').value / 15)));
+
+            // Fetch setting ukuran logo (%) lalu konversi ke dot printer (384 dot = lebar penuh kertas 58mm)
+            const printerLogoPct = parseInt(document.getElementById('setLogo').value) || 60;
+            const printerLogoSize = Math.round(384 * printerLogoPct / 100);
+            const logoBytes = await getLogoESCBytes(base64Logo, printerLogoSize);
+            
             const textBytes = encoder.encode(textOutput);
             const finalBytes = new Uint8Array(logoBytes.length + textBytes.length);
             finalBytes.set(logoBytes, 0); finalBytes.set(textBytes, logoBytes.length);
-            for (let i = 0; i < finalBytes.length; i += 100) { await char.writeValue(finalBytes.slice(i, i + 100)); await new Promise(r => setTimeout(r, 30)); }
+            
+            for (let i = 0; i < finalBytes.length; i += 100) { 
+                await char.writeValue(finalBytes.slice(i, i + 100)); 
+                await new Promise(r => setTimeout(r, 20)); 
+            }
             executeSave(btn);
-        } catch (error) { console.error('Bluetooth error:', error); window.print(); executeSave(btn); }
+        } catch (error) { 
+            console.error('Bluetooth error:', error); 
+            triggerPrint(() => executeSave(btn));
+        }
     }
 }
 
@@ -709,6 +814,7 @@ function executeSave(btnRef) {
         total: document.getElementById('inTotal').value, operator: document.getElementById('inOperator').value,
         plat: document.getElementById('inPlat').value, odometer: document.getElementById('inOdo').value
     };
+    
     const actionData = editModeTransId ? "updateHistory" : "saveHistory";
     fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionData, payload: payload }) })
     .then(res => res.json()).then(res => {
@@ -719,7 +825,11 @@ function executeSave(btnRef) {
                 cancelEdit(); 
             } else {
                 fullHistoryData.push([payload.waktu, payload.noTrans, payload.shift, payload.pompa, payload.produk, payload.harga, payload.volume, payload.total, payload.operator, payload.plat, payload.odometer, "Asli"]);
-                generateRandomID(); document.getElementById('inTotal').value = '';
+                generateRandomID(); 
+                
+                // BERSIHKAN FORM AGAR BUG "CASH 0" TIDAK TERULANG
+                document.getElementById('inTotal').value = '';
+                document.getElementById('inVolume').value = '';
             }
             renderHistoryTable(); updatePreview();
         } else { alert('Gagal: ' + res.message); }
