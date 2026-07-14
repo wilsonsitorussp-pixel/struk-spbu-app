@@ -4,7 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Struk SPBU</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --primary: #0056b3; --secondary: #6c757d; --success: #28a745; --danger: #dc3545; --warning: #ffc107;
+            --bg: #f4f7f6; --card-bg: #ffffff; --text: #333333;
+            --font-size: 12px; --logo-size: 100px;
+            --spbu-name-size: 14px; --spbu-name-weight: normal;
+            --spbu-code-size: 12px; --spbu-code-weight: normal;
+            --spbu-addr-size: 12px; --spbu-addr-weight: normal;
+            --footer-size: 10px; --footer-weight: normal;
+            --pad-top: 10px; --pad-bottom: 15px; --logo-gap: 5px;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg); margin: 0; padding: 0; color: var(--text); }
+        .d-none { display: none !important; } .d-flex { display: flex; } .gap-10 { gap: 10px; } .align-center { align-items: center; }
+        
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #ccc; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .top-nav { display: flex; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 10px 20px; position: sticky; top: 0; z-index: 100; overflow-x: auto;}
+        .nav-btn { flex: 1; min-width: 100px; padding: 12px; border: none; background: transparent; font-weight: 600; font-size: 15px; color: var(--secondary); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
+        .nav-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        
+        .main-layout { display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; padding: 20px; gap: 20px; }
+        .left-panel { flex: 1; }
+        .right-panel { flex: 1; display: flex; justify-content: center; align-items: flex-start; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; } .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .section-title { font-size: 16px; font-weight: 600; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 1px solid #eee; color: var(--primary); }
+        .alert { padding: 10px; background: #fff3cd; color: #856404; border-radius: 6px; margin-bottom: 15px; font-weight: bold; border: 1px solid #ffeeba; text-align: center; }
+        
+        .styling-box { background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        .styling-box input[type="number"] { width: 60px; display: inline-block; padding: 4px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 500; color: #555; }
+        input:not([type="checkbox"]), select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: 0.2s; font-size: 14px; }
+        .row { display: flex; gap: 10px; } .col { flex: 1; }
+        .mt-2 { margin-top: 10px; } .mt-3 { margin-top: 15px; } .mt-4 { margin-top: 25px; } .mb-2 { margin-bottom: 10px; } .mb-3 { margin-bottom: 15px; } .mb-4 { margin-bottom: 20px;} .w-100 { width: 100%; } .ml-2 { margin-left: 10px; }
+        
+        .btn { padding: 12px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: #000; }
+        .btn-print { background: var(--success); font-size: 16px; padding: 15px; box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3); }
+        
+        .table-responsive { overflow-x: auto; }
+        .table-history { width: 100%; border-collapse: collapse; min-width: 500px; font-size: 13px; }
+        .table-history th, .table-history td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .table-history th { background: #f1f1f1; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge-asli { background: #d4edda; color: #155724; } .badge-revisi { background: #fff3cd; color: #856404; }
+        .action-links { cursor: pointer; color: var(--primary); font-weight: bold; border: none; background:none; padding: 5px;}
+        .action-links.del { color: var(--danger); }
+        
+        .btn-group { display: flex; gap: 10px; }
+        .grid-pompa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .btn-toggle { padding: 10px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-weight: 600; color: #555; }
+        .btn-toggle.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .list-group { list-style: none; padding: 0; margin: 0; }
+        .list-group li { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border: 1px solid #eee; margin-bottom: 5px; border-radius: 6px; }
+        
+        /* Thermal Preview */
+        .preview-container { position: sticky; top: 80px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .receipt-58mm {
+            width: 58mm; background: white; color: black; font-family: 'Courier New', Courier, monospace;
+            font-size: var(--font-size); line-height: 1.2;
+            padding: var(--pad-top) 15px var(--pad-bottom) 15px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-radius: 2px;
+        }
+        .center { text-align: center; } .left { float: left; } .right { float: right; }
+        .info { overflow: hidden; margin-bottom: 2px; }
+        .divider { margin: 5px 0; border-top: 1px dashed black; color: transparent; height: 1px; }
+        .pre-line { white-space: pre-line; }
+        
+        table.details { width: 100%; border-collapse: collapse; }
+        table.details td { vertical-align: top; padding: 1px 0; font-size: var(--font-size); }
+        table.details td:first-child { width: 45%; }
+        
+        #logoPreview { width: var(--logo-size); filter: grayscale(100%); object-fit: contain; margin-bottom: var(--logo-gap); display: none;}
+        #outSpbuName { font-size: var(--spbu-name-size); font-weight: var(--spbu-name-weight); }
+        #outSpbuCode { font-size: var(--spbu-code-size); font-weight: var(--spbu-code-weight); }
+        #outSpbuAddress { font-size: var(--spbu-addr-size); font-weight: var(--spbu-addr-weight); }
+        #outFooter { font-size: var(--footer-size); font-weight: var(--footer-weight); }
+        
+        @media print {
+            body { background: white; margin: 0; }
+            nav, .left-panel, h3, #loadingOverlay { display: none !important; }
+            .right-panel { display: block; padding: 0; }
+            .preview-container { position: static; box-shadow: none; }
+            .receipt-58mm { box-shadow: none; padding: var(--pad-top) 0 var(--pad-bottom) 0; margin: 0; }
+        }
+        @media (min-width: 768px) {
+            .main-layout { flex-direction: row; } .top-nav { display: none; } .tab-content { display: block; animation: none; }
+            .left-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } .grid-pompa { grid-template-columns: repeat(6, 1fr); }
+            #tab-input { grid-column: 1 / 3; } #tab-history { grid-column: 1 / 3; }
+        }
+    </style>
 </head>
 <body>
     <div id="loadingOverlay">
@@ -21,7 +121,6 @@
 
     <div class="main-layout">
         <div class="left-panel">
-            
             <!-- TAB TRANSAKSI -->
             <div id="tab-input" class="tab-content active">
                 <div class="card" id="form-transaksi">
@@ -183,18 +282,18 @@
                     <div class="divider">--------------------------------</div>
                     <div class="info">
                         <span class="left">Shift: <span id="outShift">2</span></span>
-                        <span class="right">No. Trans: <span id="outTrans">---</span></span>
+                        <span class="right">No Trans: <span id="outTrans">---</span></span>
                     </div>
                     <div class="info">
                         Waktu : <span id="outWaktu">02/03/2026 15:38:56</span>
                     </div>
                     <div class="divider">--------------------------------</div>
                     <table class="details">
-                        <tr><td>Pulau/Pompa</td><td>: <span id="outPompa">12</span></td></tr>
-                        <tr><td>Nama Produk</td><td>: <span id="outProduk">PERTAMAX</span></td></tr>
-                        <tr><td>Harga/Liter</td><td>: Rp <span id="outHarga">12.600</span></td></tr>
-                        <tr><td>Volume</td><td>: (L) <span id="outVolume">0.00</span></td></tr>
-                        <tr><td>Total Harga</td><td>: Rp <span id="outTotal">0</span></td></tr>
+                        <tr><td>Pompa</td><td>: <span id="outPompa">12</span></td></tr>
+                        <tr><td>Produk</td><td>: <span id="outProduk">PERTAMAX</span></td></tr>
+                        <tr><td>Harga/L</td><td>: Rp <span id="outHarga">12.600</span></td></tr>
+                        <tr><td>Volume</td><td>: <span id="outVolume">0.00</span> L</td></tr>
+                        <tr><td>Total</td><td>: Rp <span id="outTotal">0</span></td></tr>
                         <tr><td>Operator</td><td>: <span id="outOperator">---</span></td></tr>
                     </table>
                     <div class="divider">--------------------------------</div>
@@ -204,7 +303,7 @@
                     </div>
                     <div class="divider">--------------------------------</div>
                     <table class="details">
-                        <tr><td>No. Plat</td><td>: <span id="outPlat">BK 2854 ADK</span></td></tr>
+                        <tr><td>Plat</td><td>: <span id="outPlat">BK 2854 ADK</span></td></tr>
                         <tr><td>Odo Meter</td><td>: <span id="outOdo">59.915</span></td></tr>
                     </table>
                     <div class="divider">--------------------------------</div>
@@ -215,6 +314,419 @@
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
+
+<script>
+// --- PASTIKAN URL APPS SCRIPT ANDA DI UPDATE DI SINI ---
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKIukJmIqGE4ZJfF7vyZGh41nXYHFzDtpZiFtzSZgN4NVTlnV06Lwh1FVAKUSP3NGY/exec'; 
+
+let fullHistoryData = [];
+let operatorList = [];
+let bbmPrices = { "PERTALITE": 10000, "PERTAMAX": 12600, "PERTAMAX TURBO": 14400 };
+let currentShift = 2;
+let currentPompa = 12;
+let base64Logo = "";
+let editModeTransId = null;
+
+window.onload = () => {
+    generatePompaButtons();
+    setDefaultTime();
+    fetchInitialData();
+};
+
+function setDefaultTime() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('inWaktu').value = now.toISOString().slice(0,16);
+}
+
+function formatWaktuStruk(waktuInput) {
+    if(!waktuInput) return "";
+    const d = new Date(waktuInput);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}:00`;
+}
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+}
+
+function generatePompaButtons() {
+    const container = document.getElementById('pompaGroup');
+    container.innerHTML = '';
+    for(let i = 1; i <= 12; i++) {
+        const btn = document.createElement('button');
+        btn.className = `btn-toggle ${i === currentPompa ? 'active' : ''}`;
+        btn.innerText = i;
+        btn.onclick = () => setPompa(i);
+        container.appendChild(btn);
+    }
+}
+
+function setShift(val) { currentShift = val; const btns = document.getElementById('shiftGroup').children; for(let btn of btns) btn.classList.remove('active'); btns[val-1].classList.add('active'); updatePreview(); }
+function setPompa(val) { currentPompa = val; generatePompaButtons(); updatePreview(); }
+function formatNumber(num) { return new Intl.NumberFormat('id-ID').format(num || 0); }
+
+// Helper
+function getVal(settingValue, defaultValue) { return (settingValue !== undefined && settingValue !== null) ? settingValue : defaultValue; }
+function getBool(settingValue, defaultValue) { return (settingValue !== undefined && settingValue !== null) ? String(settingValue).toLowerCase() === 'true' : defaultValue; }
+
+// Fetch Initial Data
+function fetchInitialData() {
+    fetch(APPS_SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+            fullHistoryData = data.history || [];
+            renderHistoryTable();
+
+            const s = data.settings;
+            document.getElementById('setSpbuName').value = getVal(s.spbuName, 'SPBU POLONIA');
+            document.getElementById('setSpbuCode').value = getVal(s.spbuCode, '11.201.106');
+            document.getElementById('setSpbuAddress').value = getVal(s.spbuAddress, 'JL. Imam Bonjol\nTlp. 0614156892');
+            document.getElementById('setFooterText').value = getVal(s.footerText, 'ANDA MENDAPAT SUBSIDI DARI PEMERINTAH.');
+            
+            document.getElementById('setFont').value = getVal(s.fontSize, '12');
+            document.getElementById('setLogo').value = getVal(s.logoSize, '100');
+            document.getElementById('setPadTop').value = getVal(s.space_padTop, '10');
+            document.getElementById('setPadBottom').value = getVal(s.space_padBottom, '15');
+            document.getElementById('setLogoGap').value = getVal(s.space_logoGap, '5');
+
+            document.getElementById('stNameSize').value = getVal(s.style_nameSize, '14');
+            document.getElementById('stNameBold').checked = getBool(s.style_nameBold, true);
+            document.getElementById('stCodeSize').value = getVal(s.style_codeSize, '12');
+            document.getElementById('stCodeBold').checked = getBool(s.style_codeBold, false);
+            document.getElementById('stAddrSize').value = getVal(s.style_addrSize, '12');
+            document.getElementById('stAddrBold').checked = getBool(s.style_addrBold, false);
+            document.getElementById('stFooterSize').value = getVal(s.style_footerSize, '10');
+            document.getElementById('stFooterBold').checked = getBool(s.style_footerBold, false);
+            
+            if(s.logo) {
+                base64Logo = s.logo;
+                const img = document.getElementById('logoPreview');
+                img.src = base64Logo;
+                img.style.display = 'inline-block';
+            }
+
+            if (s.operators) operatorList = JSON.parse(s.operators);
+            renderOperatorUI();
+
+            if (s.prices) {
+                bbmPrices = JSON.parse(s.prices);
+                document.getElementById('pricePertalite').value = bbmPrices["PERTALITE"];
+                document.getElementById('pricePertamax').value = bbmPrices["PERTAMAX"];
+                document.getElementById('priceTurbo').value = bbmPrices["PERTAMAX TURBO"];
+            }
+            
+            generateRandomID();
+            updatePreview();
+            document.getElementById('loadingOverlay').style.display = 'none';
+        })
+        .catch(err => { alert("Gagal terhubung ke Database Apps Script."); document.getElementById('loadingOverlay').style.display = 'none'; });
+}
+
+function renderHistoryTable() {
+    const tbody = document.getElementById('historyTbody');
+    tbody.innerHTML = '';
+    const displayData = [...fullHistoryData].reverse();
+    displayData.forEach(row => {
+        const statClass = row[11] === 'Direvisi' ? 'badge-revisi' : 'badge-asli';
+        const statText = row[11] || 'Asli';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row[0]}</td><td><strong>${row[1]}</strong></td><td>${row[4]}</td>
+            <td>Rp ${formatNumber(row[7])}</td><td><span class="badge ${statClass}">${statText}</span></td>
+            <td><button class="action-links" onclick="editTransaction('${row[1]}')">Edit</button> | <button class="action-links del" onclick="deleteTransaction('${row[1]}')">Hapus</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function editTransaction(noTrans) {
+    const row = fullHistoryData.find(r => String(r[1]) === String(noTrans));
+    if(!row) return;
+    editModeTransId = noTrans;
+    try {
+        const p = row[0].split(/[\s/:]/);
+        document.getElementById('inWaktu').value = `${p[2]}-${p[1]}-${p[0]}T${p[3]}:${p[4]}`;
+    } catch(e){}
+    document.getElementById('outTrans').innerText = row[1];
+    setShift(row[2]); setPompa(row[3]); document.getElementById('inProduk').value = row[4];
+    document.getElementById('inTotal').value = row[7]; document.getElementById('inOperator').value = row[8];
+    document.getElementById('inPlat').value = row[9]; document.getElementById('inOdo').value = row[10];
+    calculateVolume();
+    document.getElementById('editAlert').classList.remove('d-none');
+    document.getElementById('btnBatalEdit').classList.remove('d-none');
+    document.getElementById('btnAcak').disabled = true;
+    document.getElementById('btnProses').innerText = "💾 Cetak Revisi & Update Sheet";
+    document.getElementById('btnProses').classList.replace('btn-primary', 'btn-warning');
+    switchTab('tab-input', document.querySelectorAll('.nav-btn')[0]);
+}
+
+function cancelEdit() {
+    editModeTransId = null;
+    document.getElementById('editAlert').classList.add('d-none');
+    document.getElementById('btnBatalEdit').classList.add('d-none');
+    document.getElementById('btnAcak').disabled = false;
+    document.getElementById('btnProses').innerText = "🖨️ Cetak & Simpan";
+    document.getElementById('btnProses').classList.replace('btn-warning', 'btn-primary');
+    document.getElementById('inTotal').value = '';
+    setDefaultTime(); generateRandomID();
+}
+
+function deleteTransaction(noTrans) {
+    if(!confirm("Yakin ingin menghapus transaksi: " + noTrans + " ?")) return;
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "deleteHistory", payload: { noTrans: noTrans } }) })
+    .then(res => res.json()).then(res => {
+        if(res.status === 'success') {
+            fullHistoryData = fullHistoryData.filter(r => String(r[1]) !== String(noTrans));
+            renderHistoryTable(); alert("Terhapus");
+        } else alert("Gagal menghapus.");
+        document.getElementById('loadingOverlay').style.display = 'none';
+    });
+}
+
+function renderOperatorUI() {
+    const select = document.getElementById('inOperator'); select.innerHTML = '';
+    operatorList.forEach(op => {
+        const opt = document.createElement('option'); opt.value = op; opt.innerText = op; select.appendChild(opt);
+    });
+    const ul = document.getElementById('operatorList'); ul.innerHTML = '';
+    operatorList.forEach((op, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${op}</span> <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="removeOperator(${index})">Hapus</button>`;
+        ul.appendChild(li);
+    });
+    updatePreview();
+}
+
+function addOperator() {
+    const val = document.getElementById('newOperator').value.toUpperCase().trim();
+    if(val && !operatorList.includes(val)) { operatorList.push(val); document.getElementById('newOperator').value = ''; renderOperatorUI(); }
+}
+function removeOperator(index) { operatorList.splice(index, 1); renderOperatorUI(); }
+
+function updatePrices() {
+    bbmPrices["PERTALITE"] = parseFloat(document.getElementById('pricePertalite').value) || 0;
+    bbmPrices["PERTAMAX"] = parseFloat(document.getElementById('pricePertamax').value) || 0;
+    bbmPrices["PERTAMAX TURBO"] = parseFloat(document.getElementById('priceTurbo').value) || 0;
+    calculateVolume();
+}
+
+function calculateVolume() {
+    const produk = document.getElementById('inProduk').value;
+    const total = parseFloat(document.getElementById('inTotal').value) || 0;
+    document.getElementById('inVolume').value = (bbmPrices[produk] > 0) ? (total / bbmPrices[produk]).toFixed(2) : "0.00";
+    updatePreview();
+}
+
+function handleLogoUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            base64Logo = e.target.result;
+            const img = document.getElementById('logoPreview');
+            img.src = base64Logo; img.style.display = 'inline-block';
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+function generateRandomID() {
+    let newID; const existingIds = fullHistoryData.map(r => String(r[1]));
+    do { newID = Math.floor(100000 + Math.random() * 900000).toString(); } while (existingIds.includes(newID));
+    document.getElementById('outTrans').innerText = newID;
+}
+
+function updatePreview() {
+    const root = document.documentElement;
+    document.getElementById('fontVal').innerText = document.getElementById('setFont').value;
+    document.getElementById('logoVal').innerText = document.getElementById('setLogo').value;
+    document.getElementById('padTopVal').innerText = document.getElementById('setPadTop').value;
+    document.getElementById('padBottomVal').innerText = document.getElementById('setPadBottom').value;
+    document.getElementById('logoGapVal').innerText = document.getElementById('setLogoGap').value;
+    
+    root.style.setProperty('--font-size', document.getElementById('setFont').value + 'px');
+    root.style.setProperty('--logo-size', document.getElementById('setLogo').value + 'px');
+    root.style.setProperty('--pad-top', document.getElementById('setPadTop').value + 'px');
+    root.style.setProperty('--pad-bottom', document.getElementById('setPadBottom').value + 'px');
+    root.style.setProperty('--logo-gap', document.getElementById('setLogoGap').value + 'px');
+
+    root.style.setProperty('--spbu-name-size', Math.max(5, document.getElementById('stNameSize').value) + 'px');
+    root.style.setProperty('--spbu-name-weight', document.getElementById('stNameBold').checked ? 'bold' : 'normal');
+    root.style.setProperty('--spbu-code-size', Math.max(5, document.getElementById('stCodeSize').value) + 'px');
+    root.style.setProperty('--spbu-code-weight', document.getElementById('stCodeBold').checked ? 'bold' : 'normal');
+    root.style.setProperty('--spbu-addr-size', Math.max(5, document.getElementById('stAddrSize').value) + 'px');
+    root.style.setProperty('--spbu-addr-weight', document.getElementById('stAddrBold').checked ? 'bold' : 'normal');
+    root.style.setProperty('--footer-size', Math.max(5, document.getElementById('stFooterSize').value) + 'px');
+    root.style.setProperty('--footer-weight', document.getElementById('stFooterBold').checked ? 'bold' : 'normal');
+
+    document.getElementById('outSpbuName').innerText = document.getElementById('setSpbuName').value;
+    document.getElementById('outSpbuCode').innerText = document.getElementById('setSpbuCode').value;
+    document.getElementById('outSpbuAddress').innerText = document.getElementById('setSpbuAddress').value;
+    document.getElementById('outFooter').innerText = document.getElementById('setFooterText').value;
+    
+    document.getElementById('outWaktu').innerText = formatWaktuStruk(document.getElementById('inWaktu').value);
+    document.getElementById('outShift').innerText = currentShift;
+    document.getElementById('outPompa').innerText = currentPompa;
+    
+    const produk = document.getElementById('inProduk').value;
+    document.getElementById('outProduk').innerText = produk;
+    document.getElementById('outHarga').innerText = formatNumber(bbmPrices[produk]);
+    
+    const total = document.getElementById('inTotal').value;
+    document.getElementById('outTotal').innerText = formatNumber(total);
+    document.getElementById('outCash').innerText = formatNumber(total);
+    document.getElementById('outVolume').innerText = document.getElementById('inVolume').value;
+    
+    const selOp = document.getElementById('inOperator');
+    document.getElementById('outOperator').innerText = selOp.options.length ? selOp.value : "---";
+    document.getElementById('outPlat').innerText = document.getElementById('inPlat').value.toUpperCase();
+    document.getElementById('outOdo').innerText = document.getElementById('inOdo').value;
+}
+
+function saveSettingsToCloud() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    const payload = {
+        action: "updateSettings",
+        payload: {
+            spbuName: document.getElementById('setSpbuName').value, spbuCode: document.getElementById('setSpbuCode').value,
+            spbuAddress: document.getElementById('setSpbuAddress').value, footerText: document.getElementById('setFooterText').value,
+            operators: JSON.stringify(operatorList), prices: JSON.stringify(bbmPrices), logo: base64Logo,
+            logoSize: document.getElementById('setLogo').value, fontSize: document.getElementById('setFont').value,
+            space_padTop: document.getElementById('setPadTop').value, space_padBottom: document.getElementById('setPadBottom').value, space_logoGap: document.getElementById('setLogoGap').value,
+            style_nameSize: document.getElementById('stNameSize').value, style_nameBold: document.getElementById('stNameBold').checked,
+            style_codeSize: document.getElementById('stCodeSize').value, style_codeBold: document.getElementById('stCodeBold').checked,
+            style_addrSize: document.getElementById('stAddrSize').value, style_addrBold: document.getElementById('stAddrBold').checked,
+            style_footerSize: document.getElementById('stFooterSize').value, style_footerBold: document.getElementById('stFooterBold').checked
+        }
+    };
+    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+    .then(res => res.json()).then(res => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert('Pengaturan Global Tersimpan!');
+    });
+}
+
+// Helper untuk meratakan text mentok kanan/kiri (Total 32 karakter untuk kertas 58mm)
+function padLine(leftText, rightText, maxChar = 32) {
+    let spaceCount = maxChar - leftText.length - rightText.length;
+    if (spaceCount < 1) spaceCount = 1; 
+    return leftText + " ".repeat(spaceCount) + rightText;
+}
+
+// Convert Base64 ke Array Bita Monokrom untuk Printer ESC/POS (GS v 0)
+async function getLogoESCBytes(base64Str, maxSize = 384) {
+    if (!base64Str || base64Str === "") return new Uint8Array(0);
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let width = img.width; let height = img.height;
+            if (width > maxSize) { height = Math.round(height * (maxSize / width)); width = maxSize; }
+            width = Math.floor(width / 8) * 8; 
+            canvas.width = width; canvas.height = height;
+            ctx.fillStyle = 'white'; ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            const pixels = ctx.getImageData(0, 0, width, height).data;
+            const xL = Math.floor(width / 8) % 256; const xH = Math.floor(Math.floor(width / 8) / 256);
+            const yL = height % 256; const yH = Math.floor(height / 256);
+            const data = [0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH];
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x += 8) {
+                    let byte = 0;
+                    for (let bit = 0; bit < 8; bit++) {
+                        const idx = ((y * width) + x + bit) * 4;
+                        const r = pixels[idx]; const g = pixels[idx+1]; const b = pixels[idx+2];
+                        if ((0.299 * r + 0.587 * g + 0.114 * b) < 128) byte |= (1 << (7 - bit));
+                    }
+                    data.push(byte);
+                }
+            }
+            resolve(new Uint8Array(data));
+        };
+        img.onerror = () => resolve(new Uint8Array(0));
+        img.src = base64Str;
+    });
+}
+
+async function processTransaction() {
+    const btn = document.getElementById('btnProses');
+    btn.disabled = true; btn.innerText = "Memproses...";
+    if (!navigator.bluetooth) {
+        window.print();
+        executeSave(btn);
+    } else {
+        try {
+            const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }], optionalServices: ['0000af30-0000-1000-8000-00805f9b34fb'] });
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+            const char = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+            
+            const encoder = new TextEncoder();
+            const CMD_INIT = '\x1B\x40'; const CMD_ALIGN_CENTER = '\x1B\x61\x01'; const CMD_ALIGN_LEFT = '\x1B\x61\x00';
+            const CMD_BOLD_ON = '\x1B\x45\x01'; const CMD_BOLD_OFF = '\x1B\x45\x00';
+            const wrapBold = (text, isBold) => isBold ? (CMD_BOLD_ON + text + CMD_BOLD_OFF) : text;
+            
+            const spbuNameStr = wrapBold(document.getElementById('setSpbuName').value, document.getElementById('stNameBold').checked);
+            const spbuCodeStr = wrapBold(document.getElementById('setSpbuCode').value, document.getElementById('stCodeBold').checked);
+            const spbuAddrStr = wrapBold(document.getElementById('setSpbuAddress').value, document.getElementById('stAddrBold').checked);
+            const footerStr = wrapBold(document.getElementById('setFooterText').value, document.getElementById('stFooterBold').checked);
+
+            const produk = document.getElementById('inProduk').value;
+            const opName = document.getElementById('inOperator').value || "---";
+
+            let textOutput = CMD_INIT + CMD_ALIGN_CENTER + `PERTAMINA\n` + `${spbuNameStr}\n${spbuCodeStr}\n${spbuAddrStr}\n--------------------------------\n\x1B\x61\x00` + 
+`Shift: ${currentShift}  No Trans: ${document.getElementById('outTrans').innerText}\nWaktu: ${document.getElementById('outWaktu').innerText}\n--------------------------------\n` +
+`Pompa       : ${currentPompa}\nProduk      : ${produk}\nHarga/L     : Rp ${formatNumber(bbmPrices[produk])}\nVolume      : ${document.getElementById('inVolume').value} L\nTotal       : Rp ${formatNumber(document.getElementById('inTotal').value)}\nOperator    : ${opName}\n--------------------------------\n` +
+padLine('CASH', formatNumber(document.getElementById('inTotal').value)) + `\n--------------------------------\n` +
+`Plat        : ${document.getElementById('inPlat').value.toUpperCase()}\nOdo Meter   : ${document.getElementById('inOdo').value}\n--------------------------------\n` +
+CMD_ALIGN_CENTER + `${footerStr}\n\n` + "\n".repeat(Math.max(2, Math.floor(document.getElementById('setPadBottom').value / 15)));
+
+            const logoBytes = await getLogoESCBytes(base64Logo);
+            const textBytes = encoder.encode(textOutput);
+            const finalBytes = new Uint8Array(logoBytes.length + textBytes.length);
+            finalBytes.set(logoBytes, 0); finalBytes.set(textBytes, logoBytes.length);
+            for (let i = 0; i < finalBytes.length; i += 100) { await char.writeValue(finalBytes.slice(i, i + 100)); await new Promise(r => setTimeout(r, 30)); }
+            executeSave(btn);
+        } catch (error) { console.error('Bluetooth error:', error); window.print(); executeSave(btn); }
+    }
+}
+
+function executeSave(btnRef) {
+    const produk = document.getElementById('inProduk').value;
+    const payload = {
+        waktu: document.getElementById('outWaktu').innerText, noTrans: document.getElementById('outTrans').innerText,
+        shift: currentShift, pompa: currentPompa, produk: produk, harga: bbmPrices[produk], volume: document.getElementById('inVolume').value,
+        total: document.getElementById('inTotal').value, operator: document.getElementById('inOperator').value,
+        plat: document.getElementById('inPlat').value, odometer: document.getElementById('inOdo').value
+    };
+    const actionData = editModeTransId ? "updateHistory" : "saveHistory";
+    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionData, payload: payload }) })
+    .then(res => res.json()).then(res => {
+        if(res.status === 'success') {
+            if(editModeTransId) {
+                const rowIndex = fullHistoryData.findIndex(r => String(r[1]) === String(editModeTransId));
+                if(rowIndex > -1) fullHistoryData[rowIndex] = [payload.waktu, payload.noTrans, payload.shift, payload.pompa, payload.produk, payload.harga, payload.volume, payload.total, payload.operator, payload.plat, payload.odometer, "Direvisi"];
+                cancelEdit(); 
+            } else {
+                fullHistoryData.push([payload.waktu, payload.noTrans, payload.shift, payload.pompa, payload.produk, payload.harga, payload.volume, payload.total, payload.operator, payload.plat, payload.odometer, "Asli"]);
+                generateRandomID(); document.getElementById('inTotal').value = '';
+            }
+            renderHistoryTable(); updatePreview();
+        } else { alert('Gagal: ' + res.message); }
+    }).finally(() => {
+        btnRef.disabled = false; btnRef.innerText = editModeTransId ? "💾 Cetak Revisi & Update Sheet" : "🖨️ Cetak & Simpan";
+    });
+}
+</script>
 </body>
 </html>
