@@ -131,7 +131,10 @@
                     <h2 class="section-title">Waktu & Transaksi</h2>
                     <div class="input-group">
                         <label>Waktu Transaksi</label>
-                        <input type="datetime-local" id="inWaktu" onchange="updatePreview()">
+                        <div class="row" style="align-items: center;">
+                            <input type="datetime-local" id="inWaktu" onchange="updatePreview()" style="flex:1;">
+                            <button type="button" class="btn btn-secondary" style="white-space:nowrap;" onclick="randomizeSeconds()" title="Acak detik agar waktu terlihat wajar (tidak selalu :00)">🎲 :<span id="secondsVal">00</span></button>
+                        </div>
                     </div>
                     <button class="btn btn-secondary w-100 mt-2" onclick="generateRandomID()" id="btnAcak">Acak Nomor Transaksi Baru</button>
 
@@ -152,19 +155,19 @@
                     </div>
                     <div class="input-group">
                         <label>Jenis BBM</label>
-                        <select id="inProduk" onchange="calculateVolume()">
+                        <select id="inProduk" onchange="calculateTotal()">
                             <option value="PERTALITE">Pertalite</option>
                             <option value="PERTAMAX">Pertamax</option>
                             <option value="PERTAMAX TURBO">Pertamax Turbo</option>
                         </select>
                     </div>
                     <div class="input-group">
-                        <label>Total Beli (Rp)</label>
-                        <input type="number" id="inTotal" placeholder="Contoh: 100000" oninput="calculateVolume()">
+                        <label>Volume (Liter)</label>
+                        <input type="number" id="inVolume" placeholder="Contoh: 5" step="0.01" oninput="calculateTotal()">
                     </div>
                     <div class="input-group">
-                        <label>Volume (Liter) - Otomatis</label>
-                        <input type="number" id="inVolume" readonly>
+                        <label>Total Beli (Rp) - Otomatis</label>
+                        <input type="number" id="inTotal" readonly>
                     </div>
 
                     <h2 class="section-title mt-4">Kendaraan</h2>
@@ -329,6 +332,7 @@ let operatorList = [];
 let bbmPrices = { "PERTALITE": 10000, "PERTAMAX": 12600, "PERTAMAX TURBO": 14400 };
 let currentShift = 2;
 let currentPompa = 12;
+let currentSeconds = 0;
 let base64Logo = "";
 let editModeTransId = null;
 
@@ -342,6 +346,13 @@ function setDefaultTime() {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('inWaktu').value = now.toISOString().slice(0,16);
+    randomizeSeconds();
+}
+
+function randomizeSeconds() {
+    currentSeconds = Math.floor(Math.random() * 60);
+    document.getElementById('secondsVal').innerText = String(currentSeconds).padStart(2, '0');
+    updatePreview();
 }
 
 function formatWaktuStruk(waktuInput) {
@@ -352,7 +363,8 @@ function formatWaktuStruk(waktuInput) {
     const yyyy = d.getFullYear();
     const hh = String(d.getHours()).padStart(2, '0');
     const min = String(d.getMinutes()).padStart(2, '0');
-    return `${dd}/${mm}/${yyyy} ${hh}:${min}:00`;
+    const ss = String(currentSeconds).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
 }
 
 function switchTab(tabId, btn) {
@@ -471,12 +483,14 @@ function editTransaction(noTrans) {
     try {
         const p = row[0].split(/[\s/:]/);
         document.getElementById('inWaktu').value = `${p[2]}-${p[1]}-${p[0]}T${p[3]}:${p[4]}`;
+        currentSeconds = parseInt(p[5]) || 0;
+        document.getElementById('secondsVal').innerText = String(currentSeconds).padStart(2, '0');
     } catch(e){}
     document.getElementById('outTrans').innerText = row[1];
     setShift(row[2]); setPompa(row[3]); document.getElementById('inProduk').value = row[4];
-    document.getElementById('inTotal').value = row[7]; document.getElementById('inOperator').value = row[8];
+    document.getElementById('inVolume').value = row[6]; document.getElementById('inOperator').value = row[8];
     document.getElementById('inPlat').value = row[9]; document.getElementById('inOdo').value = row[10];
-    calculateVolume();
+    calculateTotal();
     document.getElementById('editAlert').classList.remove('d-none');
     document.getElementById('btnBatalEdit').classList.remove('d-none');
     document.getElementById('btnAcak').disabled = true;
@@ -534,16 +548,16 @@ function updatePrices() {
     bbmPrices["PERTALITE"] = parseFloat(document.getElementById('pricePertalite').value) || 0;
     bbmPrices["PERTAMAX"] = parseFloat(document.getElementById('pricePertamax').value) || 0;
     bbmPrices["PERTAMAX TURBO"] = parseFloat(document.getElementById('priceTurbo').value) || 0;
-    calculateVolume();
+    calculateTotal();
 }
 
-function calculateVolume() {
+function calculateTotal() {
     const produk = document.getElementById('inProduk').value;
-    const total = parseFloat(document.getElementById('inTotal').value) || 0;
-    if(total > 0 && bbmPrices[produk] > 0) {
-        document.getElementById('inVolume').value = (total / bbmPrices[produk]).toFixed(2);
+    const volume = parseFloat(document.getElementById('inVolume').value) || 0;
+    if(volume > 0 && bbmPrices[produk] > 0) {
+        document.getElementById('inTotal').value = Math.round(volume * bbmPrices[produk]);
     } else {
-        document.getElementById('inVolume').value = "";
+        document.getElementById('inTotal').value = "";
     }
     updatePreview();
 }
@@ -711,9 +725,14 @@ function triggerPrint(callback) {
 }
 
 async function processTransaction() {
+    const volumeInput = document.getElementById('inVolume').value;
+    if(!volumeInput || volumeInput <= 0) {
+        alert("Mohon isi Volume (Liter) terlebih dahulu!");
+        return;
+    }
     const totalInput = document.getElementById('inTotal').value;
     if(!totalInput || totalInput <= 0) {
-        alert("Mohon isi Total Beli (Rp) terlebih dahulu!");
+        alert("Total Beli belum terhitung. Pastikan Harga BBM sudah diatur di menu Pengaturan.");
         return;
     }
 
