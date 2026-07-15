@@ -671,7 +671,7 @@ function padLine(leftText, rightText, maxChar) {
 }
 
 // Convert Logo ke ESC/POS Bita. Disinkronkan persis dengan lebar slider setLogo
-async function getLogoESCBytes(base64Str, targetWidthDots) {
+async function getLogoESCBytes(base64Str, targetWidthDots, paperWidthDots = 384) {
     if (!base64Str || base64Str === "") return new Uint8Array(0);
     return new Promise((resolve) => {
         const img = new Image();
@@ -679,14 +679,26 @@ async function getLogoESCBytes(base64Str, targetWidthDots) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Force Width berdasar setting dari UI, dipaskan ke kelipatan 8
-            let width = Math.floor(targetWidthDots / 8) * 8; 
-            if(width < 24) width = 24; // Limit minimal
-            let height = Math.round(img.height * (width / img.width));
-            
+            // Lebar logo itu sendiri berdasar setting dari UI, dipaskan ke kelipatan 8
+            let logoWidth = Math.floor(targetWidthDots / 8) * 8;
+            if (logoWidth < 24) logoWidth = 24; // Limit minimal
+            const logoHeight = Math.round(img.height * (logoWidth / img.width));
+
+            // === FIX POSISI LOGO SELALU DI TENGAH ===
+            // Sebagian printer/aplikasi cetak Bluetooth di HP TIDAK menghormati perintah rata-tengah
+            // (ESC a) untuk gambar raster (GS v 0) — hanya berlaku untuk teks — sehingga logo tercetak
+            // condong/mepet kiri. Solusinya: kanvas dibuat SELEBAR PENUH KERTAS (paperWidthDots, default
+            // 384 dot = 58mm), lalu gambar logo digambar tepat di tengah kanvas tsb (padding putih kiri-kanan
+            // sama besar). Seluruh kanvas inilah yang dikirim sebagai satu gambar raster ke printer, sehingga
+            // posisi tengah logo terjamin di level data/byte, konsisten di printer maupun HP apa pun.
+            let width = Math.floor(paperWidthDots / 8) * 8;
+            if (width < logoWidth) width = logoWidth; // jaga-jaga jika logo diset lebih lebar dari kertas
+            const height = logoHeight;
+            const offsetX = Math.floor((width - logoWidth) / 2);
+
             canvas.width = width; canvas.height = height;
             ctx.fillStyle = 'white'; ctx.fillRect(0, 0, width, height);
-            ctx.drawImage(img, 0, 0, width, height);
+            ctx.drawImage(img, offsetX, 0, logoWidth, height);
             
             const pixels = ctx.getImageData(0, 0, width, height).data;
             const xL = Math.floor(width / 8) % 256; const xH = Math.floor(Math.floor(width / 8) / 256);
